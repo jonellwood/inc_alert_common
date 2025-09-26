@@ -1,0 +1,58 @@
+{
+	"alerts_until": 1581110270622,
+	"alerts": [
+		{
+			"source_id": "abc123",
+			"incident_time": 1581110270622,
+			"location": {
+				"geodetic": {
+					"latitude": 45.123,
+					"longitude": -71.321,
+					"uncertainty_radius": 7.5
+				},
+				"civic": {
+					"name": "RapidSOS HQ",
+					"street_1": "123 Main Street",
+					"street_2": "Apt. 626",
+					"city": "Los Angeles",
+					"state": "CA",
+					"country": "USA",
+					"zip_code": "11375"
+				}
+			},
+			"service_provider_name": "Alarm Company ABC",
+			"description": "Smoke detector tripped in zone 1 on floor 2.",
+			"status": {
+				"name": "ACCEPTED",
+				"display_name": "Received"
+			},
+			"disposition": {
+				"name": "DISPATCHED",
+				"display_name": "Dispatched"
+			},
+			"last_updated_time": 1581110270622,
+			"alert_id": "alert-6e58d630-d28f-4623-ba01-3207b497a9ba",
+			"sla_expiration_time": 1581110270922,
+			"dispatch_requested_time": 1581110270922,
+			"emergency_type": {
+				"display_name": "Burglary"
+			},
+			"site_type": {
+				"name": "RESIDENTIAL",
+				"display_name": "Residential"
+			},
+			"covering_psap": {
+				"id": "NY_123",
+				"name": "New York Police Department",
+				"phone": "15555555555"
+			},
+			"authorized_entity": {
+				"id": "CS_123",
+				"name": "Central Station ABC",
+				"phone": "15555555555"
+			},
+			"followers": ["41", "23"],
+			"supplemental_only": true
+		}
+	]
+}

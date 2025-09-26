@@ -1,0 +1,15 @@
+{
+    "InterfaceRecordID": "329A3303-0A9B-F011-810C-000C29AB5143",
+    "CallTypeAlias": "105 ANIMAL",
+    "CallerName": null,
+    "CallerPhone": null,
+    "XCoor": -80.00080681,
+    "YCoor": 33.18888318,
+    "Comment": "Smoke detector tripped in zone 1 on floor 2.",
+    "CFSNote": "{\"source_system\":\"RapidSOS\",\"emergency_type\":\"Burglary\",\"service_provider\":\"Alarm Company ABC\",\"original_description\":\"Smoke detector tripped in zone 1 on floor 2.\"}",
+    "IncStreetNum": 1003,
+    "IncStreetName": "US-52 E Apt. 626",
+    "IncPreDir": null,
+    "IncAptLoc": null,
+    "IncCommunity": "Moncks Corner"
+}

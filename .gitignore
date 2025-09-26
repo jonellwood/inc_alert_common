@@ -1,0 +1,10 @@
+.env
+secrets
+ref/acoToCad.php
+ref/address_from_coords.py
+api/cad_response_debug.log
+api/cad_debug.log
+api/cad_debug_E05289DB_0D9B_F011_810C_000C29AB5143.json
+api/cad_debug_D73A7F9D_0A9B_F011_810C_000C29AB5143.json
+api/cad_debug_B2E1952E_099B_F011_810C_000C29AB5143.json
+api/cad_debug_47505421_0F9B_F011_810C_000C29AB5143.json

@@ -1,0 +1,15 @@
+{
+    "InterfaceRecordID": "993AF0D2-0E9B-F011-810C-000C29AB5143",
+    "CallTypeAlias": "104 ALARMS - LAW",
+    "CallerName": "Matt Faircloth",
+    "CallerPhone": "7574443333",
+    "XCoor": -80.02295308,
+    "YCoor": 33.1739973,
+    "Comment": "Grubhub Anxious Moment SMS Live Agent Chat",
+    "CFSNote": "Source System: RapidSOS\nEmergency Type: OTHER\nService Provider: CompanyABC Panic Alert\nOriginal Description: Grubhub Anxious Moment SMS Live Agent Chat\nGPS Coordinates: 33.17399730, -80.02295308\nMap Link: https:\/\/www.openstreetmap.org\/search?query=33.17399730%2C-80.02295308#map=16\/33.17399730\/-80.02295308",
+    "IncStreetNum": null,
+    "IncStreetName": "Highway 52",
+    "IncPreDir": null,
+    "IncAptLoc": null,
+    "IncCommunity": "Moncks Corner"
+}

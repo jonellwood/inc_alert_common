@@ -1,0 +1,44 @@
+{
+	"callflow": "alert_create_location_update",
+	"variables": {
+		"alarm_description": "CompanyABC SMS Live Agent Chat",
+		"authorized_entity": "noc_csp",
+		"updated_location": {
+			"latitude": 33.187784947626305,
+			"longitude": -79.99649022460929,
+			"uncertainty": "10"
+		},
+		"user": {
+			"full_name": "Matt Faircloth",
+			"phone_number": "+17574443333"
+		},
+		"vehicle": {
+			"make": "Acura",
+			"model": "MDX",
+			"color": "Silver",
+			"plate_number": "CJR869",
+			"plate_state": "NV"
+		},
+		"alert_profile": {
+			"service_provider_name": "CompanyABC Panic Alert",
+			"emergency_type": "OTHER",
+			"site_type": "PERSONAL",
+			"description": "Grubhub Anxious Moment SMS Live Agent Chat"
+		},
+		"event": {
+			"location": {
+				"geodetic": {
+					"latitude": 33.187784947626305,
+					"longitude": -79.99649022460929,
+					"uncertainty": "10"
+				}
+			},
+			"source_id": "17577144161",
+			"service_provider_name": "CompanyABC Panic Alert",
+			"incident_time": "1600792965152",
+			"emergency_type": "OTHER",
+			"site_type": "PERSONAL",
+			"description": "CompanyABC SMS Live Agent Chat"
+		}
+	}
+}
