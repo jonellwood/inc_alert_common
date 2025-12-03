@@ -30,6 +30,8 @@ cache/*.json
 cache/*.txt
 *.tmp
 *.cache
+*.pid
+logs/*.pid
 
 # Local configuration overrides
 config/local.php
@@ -37,3 +39,6 @@ config/*_local.php
 
 # Copilot instructions (keep local only)
 .github/copilot-instructions.md
+
+# Local development files (not for production)
+api/sv_sendToCad.php
