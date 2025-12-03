@@ -3,6 +3,8 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 include_once __DIR__ . '/../secrets/db.php';
+require_once __DIR__ . '/../lib/rapidsos_callbacks.php';
+
 $config = new acoConfig();
 $serverName = $config->serverName;
 $database = $config->database;
@@ -53,9 +55,10 @@ function extractRapidSOSData($data)
     if (isset($data['alerts']) && is_array($data['alerts'])) {
         $alert = $data['alerts'][0] ?? []; // Process first alert
 
-        $extracted['sSourceSystem'] = 'RapidSOS';
+        // Determine source system - check if it's HelpMe911 or RapidSOS
+        $extracted['sSourceSystem'] = $data['source'] ?? $alert['source_system'] ?? 'RapidSOS';
         $extracted['sSourceId'] = $alert['alert_id'] ?? $alert['source_id'] ?? null;
-        $extracted['sSourceReferenceNumber'] = $alert['alert_id'] ?? null;
+        $extracted['sSourceReferenceNumber'] = $alert['reference_number'] ?? $alert['alert_id'] ?? null;
 
         // Location data
         if (isset($alert['location']['geodetic'])) {
@@ -85,6 +88,7 @@ function extractRapidSOSData($data)
 
         // Emergency and service details
         $extracted['sEmergencyType'] = $alert['emergency_type']['display_name'] ?? $alert['emergency_type']['name'] ?? null;
+        $extracted['sCallType'] = $alert['call_type_alias'] ?? null; // Mapped CallTypeAlias from webhook
         $extracted['sSiteType'] = $alert['site_type']['display_name'] ?? $alert['site_type']['name'] ?? null;
         $extracted['sServiceProviderName'] = $alert['service_provider_name'] ?? null;
         $extracted['sDescription'] = $alert['description'] ?? null;
@@ -92,7 +96,22 @@ function extractRapidSOSData($data)
 
         // Timing data
         $extracted['sIncidentTimeRaw'] = $alert['incident_time'] ?? null;
-        $extracted['sSubmittedTimeRaw'] = $alert['last_updated_time'] ?? null;
+        $extracted['sSubmittedTimeRaw'] = $alert['last_updated_time'] ?? $alert['submitted_time'] ?? null;
+
+        // Contact information (from nested user object or contact object)
+        if (isset($alert['user'])) {
+            $extracted['sContactFullName'] = $alert['user']['full_name'] ?? null;
+            $extracted['sContactFirstName'] = $alert['user']['first_name'] ?? null;
+            $extracted['sContactLastName'] = $alert['user']['last_name'] ?? null;
+            $extracted['sContactPhone'] = sanitizePhoneNumber($alert['user']['phone_number'] ?? $alert['user']['phone'] ?? null);
+            $extracted['sContactEmail'] = $alert['user']['email'] ?? null;
+        } elseif (isset($alert['contact'])) {
+            $extracted['sContactFullName'] = $alert['contact']['full_name'] ?? null;
+            $extracted['sContactFirstName'] = $alert['contact']['first_name'] ?? null;
+            $extracted['sContactLastName'] = $alert['contact']['last_name'] ?? null;
+            $extracted['sContactPhone'] = sanitizePhoneNumber($alert['contact']['phone'] ?? null);
+            $extracted['sContactEmail'] = $alert['contact']['email'] ?? null;
+        }
 
         // PSAP/Agency info
         if (isset($alert['covering_psap'])) {
@@ -221,6 +240,108 @@ function extractApartmentNumber($addressString)
 
     return null;
 }
+
+/**
+ * Send callback to RapidSOS to acknowledge alert acceptance and provide CFS number
+ * 
+ * @param array $record Database record with alert data
+ * @param string $cfsNumber CFS/Call number from CAD
+ */
+function sendRapidSOSCallback($record, $cfsNumber)
+{
+    try {
+        // Only send callback if we have a RapidSOS alert ID
+        $alertId = $record['sSourceReferenceNumber'] ?? $record['sSourceId'] ?? null;
+
+        if (!$alertId || !RapidSOSCallbacks::isValidAlertId($alertId)) {
+            error_log("sendRapidSOSCallback: Invalid or missing alert ID: " . var_export($alertId, true));
+            return;
+        }
+
+        // Only send callback for RapidSOS alerts
+        $sourceSystem = $record['sSourceSystem'] ?? '';
+        if (strtolower($sourceSystem) !== 'rapidsos') {
+            return;
+        }
+
+        $callbacks = new RapidSOSCallbacks();
+
+        // Accept the alert and mark as dispatched
+        $result = $callbacks->acceptAndDispatch($alertId, $cfsNumber);
+
+        if ($result['success']) {
+            error_log("Successfully sent RapidSOS callback for alert {$alertId} with CFS {$cfsNumber}");
+        } else {
+            error_log("Failed to send RapidSOS callback for alert {$alertId}: " . ($result['error'] ?? 'Unknown error'));
+        }
+    } catch (Exception $e) {
+        error_log("Exception in sendRapidSOSCallback: " . $e->getMessage());
+    }
+}
+
+function replaceStreetAbbreviations($streetName)
+{
+    if (!$streetName) {
+        return null;
+    }
+
+    // USPS standard street suffix abbreviations
+    // CAD expects these exact abbreviations
+    $abbreviations = [
+        'alley' => 'ALY',
+        'avenue' => 'AV',
+        'boulevard' => 'BLVD',
+        'circle' => 'CIR',
+        'court' => 'CT',
+        'cove' => 'CV',
+        'creek' => 'CRK',
+        'drive' => 'DR',
+        'extension' => 'EXT',
+        'expressway' => 'EXPY',
+        'highway' => 'HWY',
+        'lane' => 'LN',
+        'landing' => 'LNDG',
+        'loop' => 'LOOP',
+        'manor' => 'MNR',
+        'parkway' => 'PKWY',
+        'pass' => 'PASS',
+        'path' => 'PATH',
+        'place' => 'PL',
+        'plaza' => 'PLZ',
+        'point' => 'PT',
+        'ridge' => 'RDG',
+        'road' => 'RD',
+        'row' => 'ROW',
+        'run' => 'RUN',
+        'square' => 'SQ',
+        'street' => 'ST',
+        'terrace' => 'TER',
+        'trail' => 'TR',
+        'turnpike' => 'TPKE',
+        'way' => 'WAY',
+        // Special cases
+        'fifty two' => '52',
+        'fifty too' => '52'
+    ];
+
+    $streetName = strtolower(trim($streetName));
+    $parts = explode(' ', $streetName);
+
+    // Only replace if there are multiple parts (don't replace single-word streets)
+    if (count($parts) > 1) {
+        $lastPart = array_pop($parts);
+
+        // Check if last part matches an abbreviation
+        if (isset($abbreviations[$lastPart])) {
+            $lastPart = $abbreviations[$lastPart];
+        }
+
+        $parts[] = $lastPart;
+    }
+
+    return strtoupper(implode(' ', $parts));
+}
+
 function parseStreetAddress($streetAddress)
 {
     if (!$streetAddress) {
@@ -258,9 +379,12 @@ function parseStreetAddress($streetAddress)
     $name = preg_replace('/\b(APT\.?|APARTMENT|LOT\.?|UNIT\.?|SUITE\.?)\s*([A-Z0-9#\-\.]+)/i', '', $name); // Remove apt
     $name = trim($name);
 
+    // Apply street abbreviations to the street name
+    $name = replaceStreetAbbreviations($name);
+
     return [
         'number' => $number,
-        'name' => $name ?: null,
+        'name' => $name,
         'pre_dir' => $preDir,
         'apt' => $apt
     ];
@@ -293,9 +417,13 @@ function sendToCad($recordId, $conn)
         }
 
         // Build CAD payload
+        // Debug: Log the sCallType value to diagnose CallTypeAlias issues
+        $debugCallType = $record['sCallType'] ?? 'NULL';
+        error_log("CAD Payload - Record sCallType: '{$debugCallType}' | Emergency Type: '" . ($record['sEmergencyType'] ?? 'NULL') . "'");
+
         $cadData = [
             'InterfaceRecordID' => $record['id'],
-            'CallTypeAlias' => '104 ALARMS - LAW', // Default for now
+            'CallTypeAlias' => $record['sCallType'] ?? '104 ALARMS - LAW', // Use mapped value from webhook, fallback to default
             'CallerName' => $record['sContactFullName'],
             'CallerPhone' => $record['sContactPhone'],
             'XCoor' => (float)$record['iLongitude'],
@@ -365,6 +493,7 @@ function sendToCad($recordId, $conn)
         $logResult = file_put_contents(
             __DIR__ . '/cad_debug.log',
             "[" . date('Y-m-d H:i:s') . "] Record ID: $recordId\n" .
+                "CallTypeAlias: " . ($cadData['CallTypeAlias'] ?? 'NULL') . "\n" .
                 "CAD Data: " . json_encode($cadData, JSON_UNESCAPED_UNICODE) . "\n" .
                 "Debug file result: " . ($debugResult ? "SUCCESS" : "FAILED") . "\n\n",
             FILE_APPEND
@@ -382,10 +511,15 @@ function sendToCad($recordId, $conn)
             'ApiKey: Y9YcKfeq+r+dRmluJyk0u+5ZeQOG53gDPYWowHLzYUE='
         ];
 
+        // Debug: Log the exact JSON payload being sent to CAD
+        $cadJsonPayload = json_encode($cadData);
+        error_log("EXACT CAD JSON PAYLOAD: " . $cadJsonPayload);
+        error_log("CallTypeAlias in payload: " . ($cadData['CallTypeAlias'] ?? 'MISSING'));
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $cadUrl);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($cadData));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $cadJsonPayload);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $cadHeaders);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
@@ -426,6 +560,11 @@ function sendToCad($recordId, $conn)
             }
 
             // Update database record
+            // CRITICAL: Send callback to RapidSOS IMMEDIATELY (before database update)
+            // Callbacks must happen within ~45 seconds or alert times out
+            sendRapidSOSCallback($record, $cfsNumber);
+
+            // Update database record with CFS number
             $updateStmt = $conn->prepare("
                 UPDATE IncomingAlertData 
                 SET sCfsNumber = :cfs_number, 
