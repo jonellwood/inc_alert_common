@@ -1,0 +1,14 @@
+{
+	"name": "berkeley-county/emergency-alerts",
+	"description": "Berkeley County Emergency Services - RapidSOS Integration",
+	"type": "project",
+	"require": {
+		"php": ">=7.4",
+		"textalk/websocket": "^1.6"
+	},
+	"autoload": {
+		"psr-4": {
+			"BerkeleyCounty\\EmergencyAlerts\\": "lib/"
+		}
+	}
+}

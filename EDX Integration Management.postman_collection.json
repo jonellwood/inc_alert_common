@@ -1,0 +1,270 @@
+{
+	"info": {
+		"_postman_id": "665f8050-6eec-4346-83fe-5ccd65bf485f",
+		"name": "EDX Integration Management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38430312",
+		"_collection_link": "https://rapidsos.postman.co/workspace/EDX-%252F-Alerts~cb93604a-cad6-4f5c-a94e-ba1027d4bbd7/collection/3865793-665f8050-6eec-4346-83fe-5ccd65bf485f?action=share&source=collection_link&creator=38430312"
+	},
+	"item": [
+		{
+			"name": "Get Admin Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const jsonData = pm.response.json();",
+							"pm.environment.set(\"edxAuthToken\", jsonData[\"access_token\"]);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "{{edxAdminClientId}}",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{edxAdminClientSecret}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{edxHttpApiUrl}}/oauth/token",
+					"host": [
+						"{{edxHttpApiUrl}}"
+					],
+					"path": [
+						"oauth",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Webhook Integrations",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const jsonData = pm.response.json();",
+							"pm.environment.set(\"webhookId\", jsonData[\"integrations\"][0][\"webhookId\"]);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{edxHttpApiUrl}}/v1/integrations?limit=10&nextToken=",
+					"host": [
+						"{{edxHttpApiUrl}}"
+					],
+					"path": [
+						"v1",
+						"integrations"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "10"
+						},
+						{
+							"key": "nextToken",
+							"value": ""
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Webhook Integration",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const jsonData = pm.response.json();",
+							"pm.environment.set(\"webhookId\", jsonData[\"webhookId\"]);",
+							"pm.environment.set(\"edxClientId\", jsonData[\"edxClientId\"]);",
+							"pm.environment.set(\"edxClientSecret\", jsonData[\"edxClientSecret\"]);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"rsosClientId\": \"{{psapQaTestClientId}}\",\n    \"rsosClientSecret\": \"{{psapQaTestClientSecret}}\",\n    \"rsosAgencyId\": \"{{psapAccountId}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{edxHttpApiUrl}}/v1/integrations",
+					"host": [
+						"{{edxHttpApiUrl}}"
+					],
+					"path": [
+						"v1",
+						"integrations"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Webhook Integration (incl. EDX Client Secret)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{edxHttpApiUrl}}/v1/integrations/:webhookId",
+					"host": [
+						"{{edxHttpApiUrl}}"
+					],
+					"path": [
+						"v1",
+						"integrations",
+						":webhookId"
+					],
+					"variable": [
+						{
+							"key": "webhookId",
+							"value": "{{webhookId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Webhook Integration",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{edxHttpApiUrl}}/v1/integrations/:webhookId",
+					"host": [
+						"{{edxHttpApiUrl}}"
+					],
+					"path": [
+						"v1",
+						"integrations",
+						":webhookId"
+					],
+					"variable": [
+						{
+							"key": "webhookId",
+							"value": "{{webhookId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Webhook Integration",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"eventTypes\": [\n        \"alert.new\",\n        \"alert.status_update\",\n        \"alert.disposition_update\",\n        \"alert.chat\",\n        \"alert.milestone\",\n        \"location.prevalidation\"\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{edxHttpApiUrl}}/v1/integrations/:webhookId",
+					"host": [
+						"{{edxHttpApiUrl}}"
+					],
+					"path": [
+						"v1",
+						"integrations",
+						":webhookId"
+					],
+					"variable": [
+						{
+							"key": "webhookId",
+							"value": "{{webhookId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{edxAuthToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,124 @@
+{
+	"info": {
+		"_postman_id": "376c9d2a-8204-40bd-a21c-2312f8242a98",
+		"name": "EDX WS Auth",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38430312",
+		"_collection_link": "https://rapidsos.postman.co/workspace/EDX-%252F-Alerts~cb93604a-cad6-4f5c-a94e-ba1027d4bbd7/collection/3865793-376c9d2a-8204-40bd-a21c-2312f8242a98?action=share&source=collection_link&creator=38430312"
+	},
+	"item": [
+		{
+			"name": "Get Websocket Apigee Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const jsonData = pm.response.json();",
+							"pm.collectionVariables.set(\"psapToken\", jsonData[\"access_token\"]);",
+							"pm.environment.set(\"edxAuthToken\", jsonData[\"access_token\"]);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "client_id",
+							"value": "{{psapQaTestClientId}}",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{psapQaTestClientSecret}}",
+							"type": "text"
+						},
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{protocol}}://{{coreBaseUrl}}/oauth/token",
+					"protocol": "{{protocol}}",
+					"host": [
+						"{{coreBaseUrl}}"
+					],
+					"path": [
+						"oauth",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Websocket Cognito Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const jsonData = pm.response.json();",
+							"pm.environment.set(\"edxAuthToken\", jsonData[\"access_token\"]);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "{{edxClientId}}",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{edxClientSecret}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{edxHttpApiUrl}}/oauth/token",
+					"host": [
+						"{{edxHttpApiUrl}}"
+					],
+					"path": [
+						"oauth",
+						"token"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "psapToken",
+			"value": ""
+		}
+	]
+}
