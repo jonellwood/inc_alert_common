@@ -1,0 +1,149 @@
+{
+    "webhook_event_type": "unknown",
+    "rapidsos_alert_id": "alert-6055d23f-152f-4a0d-8171-b950bea2b0b3",
+    "timestamp": "2025-11-07 18:15:55",
+    "created_time": null,
+    "last_updated_time": null,
+    "event_timestamp": null,
+    "location": {
+        "latitude": null,
+        "longitude": null,
+        "accuracy": null,
+        "address": {
+            "formatted": null,
+            "street_number": null,
+            "street_name": null,
+            "city": null,
+            "state": null,
+            "postal_code": null,
+            "country": null
+        }
+    },
+    "emergency": {
+        "type": null,
+        "description": null,
+        "severity": null
+    },
+    "service_provider": "Honeywell",
+    "status": null,
+    "site_type": null,
+    "covering_psap": null,
+    "authorized_entity": null,
+    "dispatch_requested_time": null,
+    "sla_expiration_time": null,
+    "is_chat_enabled": false,
+    "is_media_enabled": false,
+    "supplemental_only": false,
+    "followers": [],
+    "location_history": [],
+    "original_webhook_data": {
+        "source_id": "TEST123",
+        "alert_id": "alert-6055d23f-152f-4a0d-8171-b950bea2b0b3",
+        "incident_time": "2025-11-07 18:15:55",
+        "location": null,
+        "emergency_type": null,
+        "description": null,
+        "status": null,
+        "contact_info": null,
+        "service_provider": "Honeywell",
+        "site_type": null,
+        "original_payload": {
+            "event_type": "alert.new",
+            "timestamp": 1762539355802,
+            "body": {
+                "created_time": 1762539355323,
+                "dispatch_requested_time": 1762539355602,
+                "is_chat_enabled": false,
+                "supplemental_only": false,
+                "notified_agencies": [],
+                "associated_role_type": "RESPONSIBLE",
+                "log_messages": [],
+                "location_history": [
+                    {
+                        "created_at": 1762539355360,
+                        "geodetic": {
+                            "latitude": 32.921242,
+                            "longitude": -80.014879,
+                            "uncertainty_radius": -1,
+                            "altitude": 1,
+                            "vertical_uncertainty": null,
+                            "estimated_floor_level": null,
+                            "elevation": null
+                        },
+                        "provided_location": "GEODETIC",
+                        "civic": {
+                            "name": null,
+                            "street_1": "6215 Murray Drive",
+                            "street_2": null,
+                            "city": "Hanahan",
+                            "state": "SC",
+                            "country": "US",
+                            "zip_code": "29410"
+                        }
+                    }
+                ],
+                "location": {
+                    "geodetic": {
+                        "latitude": 32.921242,
+                        "longitude": -80.014879,
+                        "uncertainty_radius": -1,
+                        "altitude": 1,
+                        "vertical_uncertainty": null,
+                        "estimated_floor_level": null,
+                        "elevation": null
+                    },
+                    "civic": {
+                        "name": null,
+                        "street_1": "6215 Murray Drive",
+                        "street_2": null,
+                        "city": "Hanahan",
+                        "state": "SC",
+                        "country": "US",
+                        "zip_code": "29410"
+                    },
+                    "provided_location": "GEODETIC"
+                },
+                "subtype": null,
+                "is_media_enabled": false,
+                "sla_expiration_time": 1762539385602,
+                "source_id": "TEST123",
+                "alert_id": "alert-6055d23f-152f-4a0d-8171-b950bea2b0b3",
+                "emergency_type": {
+                    "name": "FIRE",
+                    "display_name": "Fire"
+                },
+                "followers": [],
+                "covering_psap": {
+                    "id": "ID_Berkeley",
+                    "name": "Berkeley_Alerts",
+                    "phone": "15555555555"
+                },
+                "description": "FIRE ALARM",
+                "status": {
+                    "name": "DISPATCH_REQUESTED",
+                    "display_name": "Dispatch Requested",
+                    "entity_display_name": "partner_demos",
+                    "sender": ""
+                },
+                "covering_psap_first_viewed_time": null,
+                "incident_time": 1762539353275,
+                "service_provider_name": "Honeywell",
+                "last_updated_time": 1762539355602,
+                "authorized_entity": {
+                    "id": "noc_csp",
+                    "name": "NOC-CSP",
+                    "phone": "+18885551212"
+                },
+                "site_type": {
+                    "name": "COMMERCIAL",
+                    "display_name": "Commercial"
+                },
+                "test_mode": {
+                    "test_enabled": false,
+                    "internal": false
+                }
+            }
+        }
+    },
+    "additional_data": []
+}

@@ -1,0 +1,965 @@
+{
+	"openapi": "3.0.0",
+	"info": {
+		"title": "Alert Management API",
+		"description": "Alerts API for creating, updating, and querying for alerts.",
+		"termsOfService": "https://rapidsos.com/legal/terms-of-use/",
+		"contact": { "email": "support@rapidsos.com" },
+		"version": "1.1.0"
+	},
+	"servers": [
+		{
+			"url": "https://edx{environment}.rapidsos.com/v1/alerts",
+			"variables": {
+				"environment": { "enum": ["-sandbox", ""], "default": "-sandbox" }
+			}
+		}
+	],
+	"paths": {
+		"/": {
+			"get": {
+				"summary": "Retrieve Active Alerts",
+				"description": "Returns all metadata for active alerts in the requesters jurisdiction - paginated.",
+				"parameters": [
+					{
+						"name": "start",
+						"in": "query",
+						"description": "Start date as a UNIX timestamp (in milliseconds). If set, only\nrecords from after the start date will be returned, in ascending\norder. If set to a value other than a positive integer, will be\nignored.\n",
+						"required": false,
+						"style": "form",
+						"explode": true,
+						"schema": { "type": "integer", "default": 0 }
+					},
+					{
+						"name": "end",
+						"in": "query",
+						"description": "End date as a UNIX timestamp (in milliseconds). If set, only\nrecords from up to the end date will be returned, in ascending order\n. If set to a value other than a positive integer, will be\nignored. A 400 will be returned if this is less than start.\n",
+						"required": false,
+						"style": "form",
+						"explode": true,
+						"schema": { "type": "integer" }
+					},
+					{
+						"name": "limit",
+						"in": "query",
+						"description": "Number of location records to return per page. The default is 10 and the maximum is 100. If set without `start`, will return results starting with the oldest available record. If set to a value other than a positive integer, will be ignored.\n",
+						"required": false,
+						"style": "form",
+						"explode": true,
+						"schema": { "maximum": 100, "type": "integer", "default": 10 }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"alerts_until": {
+											"type": "integer",
+											"description": "Millisecond-precise UNIX timestamp of the created_time of the most recent record returned. This value should be used as the \"start\" parameter of the next request to implement pagination. This value will be 0 if no alerts were found.",
+											"example": 1581110270622
+										},
+										"alerts": {
+											"type": "array",
+											"items": {
+												"$ref": "#/components/schemas/AlertMetadataResponse"
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad Request",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"403": {
+						"description": "Forbidden",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"429": {
+						"description": "Too Many Requests",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					}
+				},
+				"security": [{ "application_auth": [] }]
+			}
+		},
+		"/{alert_id}": {
+			"get": {
+				"summary": "Retrieve Alert",
+				"description": "Returns all metadata for active the specified alert.",
+				"parameters": [
+					{
+						"name": "alert_id",
+						"in": "path",
+						"description": "Unique identifier of the Alert to query the status of",
+						"required": true,
+						"style": "simple",
+						"explode": false,
+						"schema": { "type": "string" },
+						"example": "alert-642d5c12-b525-4daf-92a9-dea6f718e792"
+					},
+					{
+						"name": "extra",
+						"in": "query",
+						"description": "Comma seperated values that allow for different types of extra_data to be included. Currently only log_messages will be returned",
+						"required": false,
+						"style": "form",
+						"explode": true,
+						"schema": { "type": "string", "enum": ["logs"] }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{ "$ref": "#/components/schemas/AlertMetadataResponse" },
+										{
+											"$ref": "#/components/schemas/AlertMetadataWithExtraResponse"
+										}
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"403": {
+						"description": "Forbidden",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"404": {
+						"description": "Not Found",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"429": {
+						"description": "Too Many Requests",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					}
+				},
+				"security": [{ "application_auth": [] }]
+			},
+			"patch": {
+				"summary": "Update Alert",
+				"description": "**Please note the following limitations of this endpoint:** <br/> 1. Only Central Station integrations may set the following statuses: `DISPATCH_REQUESTED`, `IGNORED`, `CANCELED` <br/> 2. Only PSAP integrations may set the following statuses: `ACCEPTED`, `DECLINED` <br/> 3. Only PSAP integrations can set the `disposition` and `decline_reason` fields",
+				"parameters": [
+					{
+						"name": "alert_id",
+						"in": "path",
+						"description": "Unique identifier of the Alert to query the status of",
+						"required": true,
+						"style": "simple",
+						"explode": false,
+						"schema": { "type": "string" },
+						"example": "alert-642d5c12-b525-4daf-92a9-dea6f718e792"
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/AlertStatusRequest" }
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/AlertStatusResponse" }
+							}
+						}
+					},
+					"400": {
+						"description": "Bad Request - Returned if passing invalid payload values",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"403": {
+						"description": "Forbidden - Returned when attempting to set a status you are not authorized to",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"404": {
+						"description": "Not Found",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict - Returned when attempting to make an invalid status transition i.e. from `ACCEPTED` to `DECLINED`",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"429": {
+						"description": "Too Many Requests",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					}
+				},
+				"security": [{ "application_auth": [] }]
+			}
+		},
+		"/portal/{org}/{alert_id}": {},
+		"/{alert_id}/log_messages": {
+			"get": {
+				"summary": "Retrieve Alert Log Messages",
+				"description": "Returns all log messages that are associated with an alert. The log messages are sorted by created_time.\n",
+				"parameters": [
+					{
+						"name": "alert_id",
+						"in": "path",
+						"description": "Unique identifier of the Alert to query log messages for.",
+						"required": true,
+						"style": "simple",
+						"explode": false,
+						"schema": { "type": "string" },
+						"example": "alert-642d5c12-b525-4daf-92a9-dea6f718e792"
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"description": "The number of the page for which to return results, where page size is determined by limit param. If page is omitted the endpoint returns the first page.\n",
+						"required": false,
+						"style": "form",
+						"explode": true,
+						"schema": { "type": "integer", "default": 1 }
+					},
+					{
+						"name": "limit",
+						"in": "query",
+						"description": "The number of log messages to retrieve.",
+						"required": false,
+						"style": "form",
+						"explode": true,
+						"schema": { "type": "integer", "default": 25 }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/LogMessageResponse" }
+							}
+						}
+					},
+					"400": {
+						"description": "Bad Request",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"403": {
+						"description": "Forbidden",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"404": {
+						"description": "Not Found",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					}
+				},
+				"security": [{ "application_auth": [] }]
+			},
+			"post": {
+				"summary": "Create Alert Log Message",
+				"description": "Creates a log message for the alert",
+				"parameters": [
+					{
+						"name": "alert_id",
+						"in": "path",
+						"description": "Unique identifier of the Alert to to create log messages for.",
+						"required": true,
+						"style": "simple",
+						"explode": false,
+						"schema": { "type": "string" },
+						"example": "alert-642d5c12-b525-4daf-92a9-dea6f718e792"
+					}
+				],
+				"requestBody": {
+					"description": "",
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/LogMessageRequest" },
+							"examples": {
+								"Example 1": {
+									"value": {
+										"message": "Hello world!",
+										"message_type": "CHAT_MESSAGE",
+										"sender": "John Doe",
+										"sender_id": "41"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/LogMessage" },
+								"examples": {
+									"Example 1": {
+										"value": {
+											"alert_id": "6e58d630-d28f-4623-ba01-3207b497a9ba",
+											"message": "Hello world!",
+											"message_type": "CHAT_MESSAGE",
+											"sender": "John Doe",
+											"sender_id": "RapidSOS-41",
+											"entity_display_name": "Acme Alerts Inc.",
+											"created_at": 1608745599391
+										}
+									}
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad Request",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"403": {
+						"description": "Forbidden",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"404": {
+						"description": "Not Found",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict Error",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorResponse" }
+							}
+						}
+					}
+				},
+				"security": [{ "application_auth": [] }]
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"ErrorResponse": {
+				"required": ["detail"],
+				"type": "object",
+				"properties": { "detail": { "type": "string" } },
+				"description": "Detail of the error response as a string"
+			},
+			"Location": {
+				"type": "object",
+				"properties": {
+					"geodetic": {
+						"type": "object",
+						"properties": {
+							"latitude": {
+								"maximum": 90,
+								"minimum": -90,
+								"type": "number",
+								"description": "Latitude coordinate of the alert incident location.",
+								"example": 45.123
+							},
+							"longitude": {
+								"maximum": 180,
+								"minimum": -180,
+								"type": "number",
+								"description": "Longitude coordinate of the alert incident location.",
+								"example": -71.321
+							},
+							"uncertainty_radius": {
+								"minimum": -1,
+								"type": "number",
+								"description": "Horizontal uncertainty in meters of the alert incident location provided by the location source device.",
+								"example": 7.5
+							}
+						},
+						"description": "Geodetic location information available for this incident"
+					},
+					"civic": {
+						"type": "object",
+						"properties": {
+							"name": {
+								"maxLength": 200,
+								"minLength": 1,
+								"type": "string",
+								"description": "Name of the location i.e. business name",
+								"example": "RapidSOS HQ"
+							},
+							"street_1": {
+								"maxLength": 200,
+								"minLength": 1,
+								"type": "string",
+								"description": "Street address of the nearest civic location to the geolocation",
+								"example": "123 Main Street"
+							},
+							"street_2": {
+								"maxLength": 200,
+								"minLength": 1,
+								"type": "string",
+								"description": "Additional street address information such as apartment number or floor.",
+								"example": "Apt. 626"
+							},
+							"city": {
+								"maxLength": 30,
+								"minLength": 1,
+								"type": "string",
+								"description": "City or locality of the civic location",
+								"example": "Los Angeles"
+							},
+							"state": {
+								"maxLength": 2,
+								"minLength": 2,
+								"type": "string",
+								"description": "ISO 3166-2 code of state or region of the civic location",
+								"example": "CA"
+							},
+							"country": {
+								"maxLength": 30,
+								"minLength": 1,
+								"type": "string",
+								"description": "Country of the civic location",
+								"example": "USA"
+							},
+							"zip_code": {
+								"maxLength": 5,
+								"minLength": 5,
+								"type": "string",
+								"description": "Zip/postal code of the civic location",
+								"example": "11375"
+							}
+						},
+						"description": "Civic location information available for this incident"
+					}
+				},
+				"description": "Location of the Alert incident. When creating an alert, the client must provide one of `geodetic` or `civic`. \nIn the event that both are provided `geodetic` will take precedence. If both are received, `geodetic` shall take precedence.\n"
+			},
+			"AlertMetadataRequest": {
+				"required": [
+					"description",
+					"incident_time",
+					"location",
+					"service_provider_name",
+					"source_id"
+				],
+				"type": "object",
+				"properties": {
+					"source_id": {
+						"maxLength": 100,
+						"minLength": 1,
+						"type": "string",
+						"description": "The ID assigned by the Central Monitoring Station for the originating service provider. This is a wholesale monitoring center's own internal ID for the customer facing alarm dealer.\n",
+						"example": "abc123"
+					},
+					"incident_time": {
+						"minimum": 0,
+						"type": "integer",
+						"description": "Millisecond-precise UNIX timestamp of when the alert occurred.",
+						"example": 1581110270622
+					},
+					"location": { "$ref": "#/components/schemas/Location" },
+					"service_provider_name": {
+						"maxLength": 50,
+						"minLength": 1,
+						"type": "string",
+						"description": "Customer facing service provider or brand known by end users. For wholesale monitoring stations, this would be the dealer's name.\n",
+						"example": "Alarm Company ABC"
+					},
+					"description": {
+						"maxLength": 150,
+						"minLength": 1,
+						"type": "string",
+						"description": "Description providing details and context for what event the alert represents",
+						"example": "Smoke detector tripped in zone 1 on floor 2."
+					}
+				},
+				"description": "Core fields required for creating an Alert record.",
+				"x-stoplight": { "id": "5a14265fbcc6f" }
+			},
+			"AlertMetadataResponse": {
+				"description": "Core Alert data including the data provisioned by the Alert creator as well as the covering PSAP that would dispatch it and the RSOS ID info.",
+				"allOf": [
+					{ "$ref": "#/components/schemas/AlertMetadataRequest" },
+					{ "$ref": "#/components/schemas/AlertStatusResponse" },
+					{
+						"type": "object",
+						"properties": {
+							"alert_id": {
+								"type": "string",
+								"description": "Unique identifier of the specific alert.",
+								"example": "alert-6e58d630-d28f-4623-ba01-3207b497a9ba"
+							},
+							"last_updated_time": {
+								"type": "integer",
+								"description": "Millisecond-precise UNIX timestamp of when the latest status change occurred",
+								"example": 1581110270622
+							},
+							"sla_expiration_time": {
+								"type": "integer",
+								"description": "Millisecond-precise UNIX timestamp of when the Alert must be accepted by the PSAP by, otherwise it will be considered timed out and unserviceable via the Alerts platform.",
+								"example": 1581110270922
+							},
+							"dispatch_requested_time": {
+								"type": "integer",
+								"description": "Millisecond-precise UNIX timestamp of when authorized entity (i.e. Central Station) requested dispatch from the covering PSAP",
+								"example": 1581110270922
+							},
+							"emergency_type": {
+								"type": "object",
+								"properties": {
+									"display_name": {
+										"type": "string",
+										"description": "Human friendly name of the emergency type value",
+										"example": "Burglary"
+									}
+								}
+							},
+							"site_type": {
+								"type": "object",
+								"properties": {
+									"name": {
+										"type": "string",
+										"description": "Internal value of the site type. Residential and commercial alerts are \ntypically fixed (civic) locations, while personal and vehicle \nalerts are typically GPS (geodetic) locations.\n",
+										"example": "RESIDENTIAL",
+										"enum": ["RESIDENTIAL", "COMMERCIAL", "PERSONAL", "VEHICLE"]
+									},
+									"display_name": {
+										"type": "string",
+										"description": "Human friendly name of the site type value",
+										"example": "Residential"
+									}
+								}
+							},
+							"covering_psap": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string",
+										"description": "Unique RSOS account identifier of the PSAP with jurisdiction over this alert location.",
+										"example": "NY_123"
+									},
+									"name": {
+										"type": "string",
+										"description": "Name of the PSAP with jurisdiction over this alert location.",
+										"example": "New York Police Department"
+									},
+									"phone": {
+										"type": "string",
+										"description": "Administrative phone number of this PSAP",
+										"example": "15555555555"
+									}
+								}
+							},
+							"authorized_entity": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string",
+										"description": "Unique RSOS account identifier of the authorized entity responsible for this alert.",
+										"example": "CS_123"
+									},
+									"name": {
+										"type": "string",
+										"description": "Name of the authorized entity responsible for this alert.",
+										"example": "Central Station ABC"
+									},
+									"phone": {
+										"type": "string",
+										"description": "Administrative phone number of this authorized entity",
+										"example": "15555555555"
+									}
+								}
+							},
+							"followers": {
+								"type": "array",
+								"description": "User IDs of all CSP and RSP users who have taken action on this alert (chat, status update, etc.)",
+								"example": ["41", "23"],
+								"items": { "type": "string" }
+							},
+							"supplemental_only": {
+								"type": "boolean",
+								"description": "Flag indicating if this Alert is being used at the PSAP as supplemental data only. If `true` the PSAP cannot update status or chat and a traditional 10-digit adminstriative call is required for servicing the alert.",
+								"example": true
+							}
+						}
+					}
+				],
+				"x-stoplight": { "id": "ec12fa75a3a80" }
+			},
+			"AlertMetadataWithExtraResponse": {
+				"allOf": [
+					{ "$ref": "#/components/schemas/AlertMetadataResponse" },
+					{
+						"type": "object",
+						"properties": {
+							"adr": {
+								"type": "array",
+								"description": "Array of all ADR records related to this alert record",
+								"items": { "type": "object" }
+							},
+							"logs": {
+								"type": "array",
+								"description": "Array of all log records related to this alert record",
+								"items": { "type": "object" }
+							}
+						}
+					}
+				],
+				"x-stoplight": { "id": "1df5e6f6f5675" }
+			},
+			"AlertStatusRequest": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"description": "The name of the status to update the Alert to",
+						"example": "ACCEPTED",
+						"enum": [
+							"NEW",
+							"IGNORED",
+							"DISPATCH_REQUESTED",
+							"ACCEPTED",
+							"DECLINED",
+							"TIMEOUT",
+							"CANCELED"
+						]
+					},
+					"disposition": {
+						"type": "string",
+						"description": "Name of the disposition to update the Alert with",
+						"example": "DISPATCHED",
+						"enum": [
+							"DISPATCHED",
+							"ENROUTE",
+							"PREEMPTED",
+							"ON_SCENE",
+							"CLEARED_NO_REPORT",
+							"CLEARED_WITH_REPORT",
+							"CLOSED"
+						]
+					},
+					"decline_reason": {
+						"maxLength": 100,
+						"minLength": 1,
+						"type": "string",
+						"description": "Descriptive message to provide details why the Alert was declined. This can only be set when the Alert is being set to, or in the `DECLINED` status",
+						"example": "Declined due to insufficient details"
+					},
+					"cancel_reason": {
+						"maxLength": 100,
+						"minLength": 1,
+						"type": "string",
+						"description": "Descriptive message to provide details why the Alert was canceled. This can only be set when the Alert is being set to, or in the `CANCELED` status",
+						"example": "Canceled due to false alarm"
+					}
+				},
+				"description": "Alert status information to update. Must provide either `status` or `disposition` value to update."
+			},
+			"AlertStatusResponse": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "object",
+						"properties": {
+							"name": {
+								"type": "string",
+								"description": "Internal name of the Alert status",
+								"example": "ACCEPTED",
+								"enum": [
+									"NEW",
+									"IGNORED",
+									"DISPATCH_REQUESTED",
+									"ACCEPTED",
+									"DECLINED",
+									"TIMEOUT",
+									"CANCELED"
+								]
+							},
+							"display_name": {
+								"type": "string",
+								"description": "Human friendly name of the status value",
+								"example": "Received"
+							}
+						}
+					},
+					"disposition": {
+						"type": "object",
+						"properties": {
+							"name": {
+								"type": "string",
+								"description": "Internal name of the Alert disposition",
+								"example": "DISPATCHED",
+								"enum": [
+									"DISPATCHED",
+									"ENROUTE",
+									"PREEMPTED",
+									"ON_SCENE",
+									"CLEARED_NO_REPORT",
+									"CLEARED_WITH_REPORT",
+									"CLOSED",
+									"CANCELED"
+								]
+							},
+							"display_name": {
+								"type": "string",
+								"description": "Human friendly name of the disposition value",
+								"example": "Dispatched"
+							}
+						},
+						"description": "Description providing further specficity on the current status of the alert"
+					},
+					"last_updated_time": {
+						"type": "integer",
+						"description": "Millisecond-precise UNIX timestamp of when the latest status change occurred",
+						"example": 1581110270622
+					}
+				},
+				"description": "Current Alert status information."
+			},
+			"LogMessageRequest": {
+				"required": ["alert_id", "message", "message_type"],
+				"type": "object",
+				"properties": {
+					"message": {
+						"maxLength": 1000,
+						"type": "string",
+						"description": "The chat message, as entered by the end user, that is to be broadcast to all chat participants.",
+						"example": "Hello world!"
+					},
+					"message_type": {
+						"type": "string",
+						"description": "The type of the message.",
+						"example": "CHAT_MESSAGE",
+						"enum": [
+							"SYSTEM_UPDATE",
+							"STATUS_UPDATE",
+							"CHAT_MESSAGE",
+							"MILESTONE",
+							"MULTI_TRIP_SIGNAL"
+						]
+					},
+					"sender": {
+						"maxLength": 100,
+						"type": "string",
+						"description": "The full name of the user who sent the message.",
+						"example": "John Doe"
+					},
+					"sender_id": {
+						"type": "string",
+						"description": "The database id of the user who sent the message.",
+						"example": "41"
+					}
+				},
+				"description": "Contains data required to create a log message."
+			},
+			"LogMessageResponse": {
+				"type": "object",
+				"properties": {
+					"total_records": { "type": "integer" },
+					"log_messages": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/LogMessage" }
+					}
+				},
+				"description": "Contains log message data related to an alert."
+			},
+			"LogMessage": {
+				"type": "object",
+				"properties": {
+					"alert_id": {
+						"type": "string",
+						"description": "The unique identifier for an alert event.",
+						"example": "6e58d630-d28f-4623-ba01-3207b497a9ba"
+					},
+					"message": {
+						"type": "string",
+						"description": "The chat message, as entered by the end user, that is to be broadcast to all chat participants.",
+						"example": "Hello world!"
+					},
+					"message_type": {
+						"type": "string",
+						"description": "The type of the message",
+						"example": "CHAT_MESSAGE",
+						"enum": [
+							"SYSTEM_UPDATE",
+							"STATUS_UPDATE",
+							"CHAT_MESSAGE",
+							"MILESTONE",
+							"MULTI_TRIP_SIGNAL"
+						]
+					},
+					"sender": {
+						"type": "string",
+						"description": "The full name of the user who sent the message.",
+						"example": "John Doe"
+					},
+					"sender_id": {
+						"type": "string",
+						"description": "The database id of the user who sent the message.",
+						"example": "RapidSOS-41"
+					},
+					"entity_display_name": {
+						"type": "string",
+						"description": "The name of the entity that generated the log message.",
+						"example": "Acme Alerts Inc."
+					},
+					"created_at": {
+						"type": "integer",
+						"description": "The millisecond-precise UNIX timestamp indicating when the alert record was stored in the database.",
+						"example": 1608745599391
+					}
+				},
+				"description": "Alerts LogMessage."
+			},
+			"EmergencyTypeValues": {
+				"type": "string",
+				"description": "The type of emergency event that this alert describes.",
+				"example": "BURGLARY",
+				"enum": [
+					"BURGLARY",
+					"TEST_BURGLARY",
+					"HOLDUP",
+					"TEST_HOLDUP",
+					"SILENT_ALARM",
+					"TEST_SILENT_ALARM",
+					"CRASH",
+					"TEST_CRASH",
+					"MEDICAL",
+					"TEST_MEDICAL",
+					"FIRE",
+					"TEST_FIRE",
+					"CO",
+					"TEST_CO",
+					"OTHER",
+					"TEST_OTHER",
+					"ACTIVE_ASSAILANT",
+					"TEST_ACTIVE_ASSAILANT",
+					"MOBILE_PANIC",
+					"TEST_MOBILE_PANIC",
+					"TRAIN_DERAILMENT",
+					"TEST_TRAIN_DERAILMENT"
+				]
+			}
+		},
+		"securitySchemes": {
+			"application_auth": {
+				"type": "oauth2",
+				"flows": {
+					"clientCredentials": {
+						"tokenUrl": "https://api-sandbox.rapidsos.com/oauth/token",
+						"scopes": {}
+					}
+				}
+			}
+		}
+	},
+	"x-stoplight": { "id": "l4wiuk5595zep" }
+}
