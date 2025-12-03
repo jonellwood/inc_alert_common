@@ -1,0 +1,15 @@
+<Files "*.log">
+    Require all granted
+</Files>
+
+# Allow access to JSON debug files
+
+<Files "cad_debug_*.json">
+    Require all granted
+</Files>
+
+# Allow access to debug text files
+
+<Files "debug_*.txt">
+    Require all granted
+</Files>
