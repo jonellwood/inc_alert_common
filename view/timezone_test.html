@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timezone Test</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 p-8">
+    <div id="app">
+        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold mb-6">Timezone Conversion Test</h1>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-50 p-4 rounded">
+                    <h3 class="text-lg font-semibold mb-3">Test Database Timestamp</h3>
+                    <p class="text-sm text-gray-600 mb-2">Your database timestamp:</p>
+                    <p class="font-mono bg-white p-2 rounded border">{{ testTimestamp }}</p>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded">
+                    <h3 class="text-lg font-semibold mb-3">Converted to EST/EDT</h3>
+                    <p class="text-sm text-gray-600 mb-2">Formatted for display:</p>
+                    <p class="font-mono bg-white p-2 rounded border">{{ formatDate(testTimestamp) }}</p>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold mb-3">Current Time Comparisons</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-50 p-4 rounded">
+                        <h4 class="font-medium mb-2">Current UTC</h4>
+                        <p class="font-mono text-sm">{{ currentUTC }}</p>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded">
+                        <h4 class="font-medium mb-2">Current EST/EDT</h4>
+                        <p class="font-mono text-sm">{{ currentEST }}</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded">
+                        <h4 class="font-medium mb-2">Browser Local</h4>
+                        <p class="font-mono text-sm">{{ currentLocal }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold mb-3">Relative Time Test</h3>
+                <p class="text-sm text-gray-600 mb-2">Your timestamp relative to now:</p>
+                <p class="font-mono bg-white p-2 rounded border">{{ formatRelativeTime(testTimestamp) }}</p>
+            </div>
+
+            <div class="mt-6 bg-yellow-50 p-4 rounded">
+                <h3 class="text-lg font-semibold mb-2">Verification Notes</h3>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• If your database timestamp is '2025-10-01 15:59:21.157' and it's currently 12:03 PM EST</li>
+                    <li>• The converted time should show around 11:59 AM EST (assuming database is UTC)</li>
+                    <li>• The relative time should show "{{ calculateExpectedRelative() }}"</li>
+                    <li>• EST/EDT detection: Currently {{ isDaylightSaving(new Date()) ? 'EDT (Daylight Time)' : 'EST
+                        (Standard Time)' }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    testTimestamp: '2025-10-01 15:59:21.157',
+                    currentTime: new Date()
+                };
+            },
+
+            computed: {
+                currentUTC() {
+                    return this.currentTime.toISOString();
+                },
+                currentEST() {
+                    return this.currentTime.toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true,
+                        timeZone: 'America/New_York'
+                    });
+                },
+                currentLocal() {
+                    return this.currentTime.toLocaleString();
+                }
+            },
+
+            methods: {
+                formatDate(dateString) {
+                    if (!dateString) return 'N/A';
+
+                    try {
+                        // Create date object - database timestamps are typically UTC
+                        const date = new Date(dateString);
+
+                        // Convert to Eastern Time (handles both EST and EDT automatically)
+                        const formatted = date.toLocaleString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true,
+                            timeZone: 'America/New_York'  // Eastern Time Zone
+                        });
+
+                        // Add timezone indicator
+                        const isDST = this.isDaylightSaving(date);
+                        const timezone = isDST ? 'EDT' : 'EST';
+                        return `${formatted} ${timezone}`;
+                    } catch (error) {
+                        console.warn('Date formatting error:', error, 'for date:', dateString);
+                        return dateString;
+                    }
+                },
+
+                formatRelativeTime(dateString) {
+                    if (!dateString) return 'N/A';
+
+                    try {
+                        const date = new Date(dateString);
+                        const now = new Date();
+                        const diffMs = now - date;
+                        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                        if (diffMinutes < 1) {
+                            return 'Just now';
+                        } else if (diffMinutes < 60) {
+                            return `${diffMinutes} min${diffMinutes !== 1 ? 's' : ''} ago`;
+                        } else if (diffHours < 24) {
+                            return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+                        } else if (diffDays < 7) {
+                            return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+                        } else {
+                            // For older entries, show the formatted date
+                            return this.formatDate(dateString);
+                        }
+                    } catch (error) {
+                        return this.formatDate(dateString);
+                    }
+                },
+
+                isDaylightSaving(date) {
+                    const year = date.getFullYear();
+
+                    // DST in the US typically runs from 2nd Sunday in March to 1st Sunday in November
+                    const march = new Date(year, 2, 1); // March 1st
+                    const november = new Date(year, 10, 1); // November 1st
+
+                    // Get the second Sunday in March
+                    const dstStart = new Date(year, 2, 14 - march.getDay());
+
+                    // Get the first Sunday in November
+                    const dstEnd = new Date(year, 10, 7 - november.getDay());
+
+                    return date >= dstStart && date < dstEnd;
+                },
+
+                calculateExpectedRelative() {
+                    // Calculate what the relative time should be
+                    // If timestamp is 15:59:21 UTC and current is ~17:03 UTC
+                    // That's about 4 minutes difference
+                    const testDate = new Date(this.testTimestamp);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((now - testDate) / (1000 * 60));
+
+                    if (diffMinutes < 60) {
+                        return `about ${diffMinutes} minutes ago`;
+                    } else {
+                        const diffHours = Math.floor(diffMinutes / 60);
+                        return `about ${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+                    }
+                }
+            },
+
+            mounted() {
+                // Update current time every second
+                setInterval(() => {
+                    this.currentTime = new Date();
+                }, 1000);
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
