@@ -274,11 +274,9 @@ try {
 
     if ($httpCode >= 200 && $httpCode < 300) {
         $responseData = json_decode($response, true);
-        sendResponse(200, 'HelpMe911 alert processed successfully', [
-            'alert_id' => $transformedAlert['alert_id'],
-            'cfs_number' => $responseData['cfs_number'] ?? null,
-            'cad_response' => $responseData
-        ]);
+        http_response_code(200);
+        echo $responseData['cfs_number'] ?? '';
+        exit;
     } else {
         logWebhookActivity('cad_error', [
             'http_code' => $httpCode,
