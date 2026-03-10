@@ -645,6 +645,11 @@ if (isset($data['alerts']) || isset($data['variables'])) {
 // Merge extracted data with original, giving priority to extracted data
 $normalizedData = array_merge($data, $extractedData);
 
+// Allow webhooks to specify their source system (overrides default 'RapidSOS' from extractRapidSOSData)
+if (isset($data['source_system'])) {
+    $normalizedData['sSourceSystem'] = $data['source_system'];
+}
+
 // Legacy normalization for other sources
 if (!isset($normalizedData['sSourceSystem']) && isset($normalizedData['sSource'])) {
     $normalizedData['sSourceSystem'] = $normalizedData['sSource'];
