@@ -38,7 +38,7 @@ createApp({
 				...new Set(
 					this.alerts
 						.map((alert) => alert.sEmergencyType)
-						.filter((type) => type)
+						.filter((type) => type),
 				),
 			];
 			return types.sort();
@@ -71,21 +71,21 @@ createApp({
 						(alert.sCfsNumber &&
 							alert.sCfsNumber.toLowerCase().includes(searchLower)) ||
 						(alert.sEmergencyType &&
-							alert.sEmergencyType.toLowerCase().includes(searchLower))
+							alert.sEmergencyType.toLowerCase().includes(searchLower)),
 				);
 			}
 
 			// Status filter
 			if (this.filterStatus) {
 				filtered = filtered.filter(
-					(alert) => alert.sCadStatus === this.filterStatus
+					(alert) => alert.sCadStatus === this.filterStatus,
 				);
 			}
 
 			// Emergency type filter
 			if (this.filterEmergencyType) {
 				filtered = filtered.filter(
-					(alert) => alert.sEmergencyType === this.filterEmergencyType
+					(alert) => alert.sEmergencyType === this.filterEmergencyType,
 				);
 			}
 
@@ -182,7 +182,7 @@ createApp({
 
 			return pages.filter(
 				(page) =>
-					page !== '...' || pages.indexOf(page) === pages.lastIndexOf(page)
+					page !== '...' || pages.indexOf(page) === pages.lastIndexOf(page),
 			);
 		},
 	},
@@ -210,6 +210,13 @@ createApp({
 
 			try {
 				const response = await fetch('../api/getAlerts.php');
+
+				if (response.status === 401) {
+					window.location.href =
+						'../auth/login.php?redirect=' +
+						encodeURIComponent(window.location.pathname);
+					return;
+				}
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`);
@@ -330,7 +337,7 @@ createApp({
 			// Format as (XXX) XXX-XXXX
 			if (cleaned.length === 10) {
 				return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(
-					6
+					6,
 				)}`;
 			}
 
