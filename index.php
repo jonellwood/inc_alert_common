@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/lib/auth_check.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -172,11 +173,22 @@
                         <i class="fas fa-shield-alt text-4xl mr-4"></i>
                         <h1 class="text-4xl font-bold">Emergency Alerts System</h1>
                     </div>
-                    <p class="text-xl opacity-90">Berkeley County Emergency Services Integration</p>
-                    <p class="text-lg opacity-75 mt-2">RapidSOS • CAD Integration • Real-time Dashboard</p>
+                    <p class="text-xl opacity-90">Berkeley County Event Ingestion Layer</p>
+                    <p class="text-lg opacity-75 mt-2">RapidSOS • Alastar • CAD Integration • AsapToPsap • Real-time
+                        Dashboard</p>
                 </div>
             </div>
         </header>
+
+        <!-- User Bar -->
+        <div class="bg-gray-900 text-gray-400 text-xs py-2 px-6">
+            <div class="container mx-auto flex justify-between items-center">
+                <span><i class="fas fa-user-circle mr-1"></i> <?php echo htmlspecialchars(RedfiveAuth::getDisplayName()); ?></span>
+                <a href="auth/logout.php" class="text-red-400 hover:text-red-300 transition-colors">
+                    <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                </a>
+            </div>
+        </div>
 
         <!-- System Status Banner -->
         <div class="bg-green-50 border-l-4 border-green-400 p-4">
@@ -468,6 +480,10 @@
                             <i class="fas fa-network-wired text-orange-600 mr-2"></i>
                             WebSocket API Documentation
                         </a>
+                        <a href="ref/api-docs/" target="_blank" class="block p-4 border rounded hover:bg-gray-50">
+                            <i class="fas fa-crosshairs text-orange-600 mr-2"></i>
+                            CFS Listener API Documentation
+                        </a>
                     </div>
                 </div>
             </div>
@@ -476,8 +492,8 @@
         <!-- Footer -->
         <footer class="bg-gray-800 text-white py-8 mt-12">
             <div class="container mx-auto px-6 text-center">
-                <p>&copy; 2025 Berkeley County Emergency Services. All rights reserved.</p>
-                <p class="text-gray-400 mt-2">Emergency Alerts System - RapidSOS Integration</p>
+                <p>&copy; 2026 Berkeley County IT Department. All rights reserved.</p>
+                <p class="text-gray-400 mt-2">Red Five Signal Gateway - Public Safety Event Ingestion Layer</p>
             </div>
         </footer>
     </div>
@@ -485,10 +501,10 @@
 
     <script>
         // Splash screen transition
-        window.addEventListener('load', function () {
-            setTimeout(function () {
+        window.addEventListener('load', function() {
+            setTimeout(function() {
                 document.getElementById('splashScreen').classList.add('fade-out');
-                setTimeout(function () {
+                setTimeout(function() {
                     document.getElementById('mainContent').classList.add('show');
                     document.getElementById('splashScreen').style.display = 'none';
                 }, 800); // Wait for fade-out to complete
@@ -496,7 +512,7 @@
         });
 
         // Load system status on page load
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             loadSystemStatus();
             loadQuickStats();
         });
@@ -505,8 +521,12 @@
             try {
                 const response = await fetch('manage/subscriptions.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'connection_status' })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'connection_status'
+                    })
                 });
 
                 const result = await response.json();
@@ -560,7 +580,7 @@
         }
 
         // Close modals when clicking outside
-        window.onclick = function (event) {
+        window.onclick = function(event) {
             const modals = ['logsModal', 'testingModal', 'docsModal'];
             modals.forEach(modalId => {
                 const modal = document.getElementById(modalId);
