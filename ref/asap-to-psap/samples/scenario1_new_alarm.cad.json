@@ -1,0 +1,16 @@
+{
+  "InterfaceRecordID": "demo-record-id",
+  "CallTypeAlias": "Burglary",
+  "CFSStartWhen": "2004-06-22T06:00:00.0Z",
+  "IncStreetNum": 3616,
+  "IncPreDir": "N",
+  "IncStreetName": "Hopkins Rd",
+  "IncAptLoc": "200",
+  "IncCommunity": "Richmond City",
+  "CallerName": "John Q Public",
+  "CallerPhone": "202-212-5555",
+  "XCoor": -77.456174,
+  "YCoor": 37.501308,
+  "Comment": "Front door and motion, reception area",
+  "CFSNote": "Alarm Type: Burglary\nEvent Details: Front door and motion, reception area\nDispatch Agency: VA12200B2 Richmond (CITY), VA-APCO\nMonitoring Station: 1VS Vector Security\nPermit: Permit-1234 Burglary\nAudible: AUDIBLE\nConfirmation: Video confirms someone on premises\nConfirmation URI: http://www.trutv.com/video/most-shocking/worst-burglar-ever.html\nSensor Details: Radiological sensor alerting\nCall To Premise: No answer at contact number indicated"
+}

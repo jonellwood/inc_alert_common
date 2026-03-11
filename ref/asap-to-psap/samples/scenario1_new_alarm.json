@@ -1,0 +1,107 @@
+{
+  "alarm_version": "3.3",
+  "event_id": "4601156",
+  "alarm_type": "Burglary",
+  "event": {
+    "id": "4601156",
+    "category": "Alarm",
+    "type": "Burglary",
+    "location_category": "Commercial",
+    "details": "Front door and motion, reception area",
+    "privacy_bypass_code": "1234",
+    "datetime": "2004-06-22T06:00:00.0Z",
+    "permit": {
+      "id": "Permit-1234",
+      "category": "Burglary"
+    },
+    "dispatch_agency": {
+      "id": "VA12200B2",
+      "name": "Richmond (CITY), VA-APCO"
+    },
+    "audible_description": "AUDIBLE",
+    "confirmation_text": "Video confirms someone on premises",
+    "confirmation_uri": "http://www.trutv.com/video/most-shocking/worst-burglar-ever.html",
+    "sensor_details": "Radiological sensor alerting",
+    "call_to_premise_text": "No answer at contact number indicated"
+  },
+  "monitoring_station": {
+    "id": "1VS",
+    "name": "Vector Security",
+    "operator_id": "56",
+    "source_id": "FRED12345"
+  },
+  "service_location": {
+    "address_full": "3616 N. Hopkins Rd Suite 200 Richmond City VA 23224",
+    "building": "Dogwood Building",
+    "unit": "200",
+    "street": {
+      "number": "3616",
+      "predirectional": "N",
+      "name": "Hopkins",
+      "category": "Rd",
+      "postdirectional": null
+    },
+    "city": "Richmond City",
+    "county": "RICHMOND CITY - IND CITY",
+    "state": "VA",
+    "postal_code": "23224",
+    "altitude": {
+      "value": "23",
+      "unit": "Ft"
+    },
+    "cross_street": "Walnut Terrace",
+    "description": "Gun Shop",
+    "map": {
+      "lat_text": "37.501308",
+      "lon_text": "-77.456174"
+    },
+    "name": "XYZ Service Center",
+    "geo": {
+      "datum": "NAH-B",
+      "lat_deg": "37",
+      "lat_min": "29",
+      "lat_sec": "58.5600",
+      "lon_deg": "-77",
+      "lon_min": "27",
+      "lon_sec": "19.7640"
+    },
+    "directions": "McKnight Road North, Left on Wallace, Right on Elm",
+    "info": "2 Story red brick office building",
+    "capture_time": "2004-06-22T16:45:00.0Z"
+  },
+  "service_organization": {
+    "id": "VA-DCJS12345",
+    "name": "Petersburg Alarm",
+    "phone": "800-555-1234"
+  },
+  "contacts": {
+    "operator": [
+      "412-565-6754"
+    ],
+    "subscriber": [
+      "202-212-5555"
+    ]
+  },
+  "subscriber": {
+    "given": "John",
+    "middle": "Q",
+    "surname": "Public"
+  },
+  "vehicle": {
+    "color": "White",
+    "style_code": "HS",
+    "plate_id": "ASD43444",
+    "plate_source": "CO",
+    "make_code": "FORD",
+    "model_code": "CW3",
+    "vin": "1FDKE30G6KHC23975"
+  },
+  "raw_namespaces": {
+    "em": "http://niem.gov/niem/domains/emergencyManagement/2.0",
+    "j": "http://niem.gov/niem/domains/jxdm/4.0",
+    "s": "http://niem.gov/niem/structures/2.0",
+    "nc": "http://niem.gov/niem/niem-core/2.0",
+    "apco-alarm": "http://www.apcointl.com/new/commcenter911/external-alarm.xsd",
+    "xsi": "http://www.w3.org/2001/XMLSchema-instance"
+  }
+}

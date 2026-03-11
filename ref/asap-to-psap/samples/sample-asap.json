@@ -1,0 +1,25 @@
+{
+  "event_id": "EVT-12345",
+  "alarm_type": "Fire",
+  "premises": {
+    "name": "Sample Building",
+    "address_line": "123 Main St",
+    "city": "Springfield",
+    "state": "IL",
+    "postal_code": "62701"
+  },
+  "contact": {
+    "name": "John Doe",
+    "phone": "555-123-4567"
+  },
+  "timestamps": {
+    "created": "2025-01-01T12:34:56Z"
+  },
+  "raw_namespaces": {
+    "apco-alarm": "http://www.apcointl.com/new/commcenter911/external-alarm.xsd",
+    "nc": "http://niem.gov/niem/niem-core/2.0",
+    "em": "http://niem.gov/niem/domains/emergencyManagement/2.0",
+    "j": "http://niem.gov/niem/domains/jxdm/4.0",
+    "s": "http://niem.gov/niem/structures/2.0"
+  }
+}

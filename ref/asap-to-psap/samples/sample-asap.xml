@@ -1,0 +1,27 @@
+<apco-alarm:ExternalAlarm
+  xmlns:apco-alarm="http://www.apcointl.com/new/commcenter911/external-alarm.xsd"
+  xmlns:nc="http://niem.gov/niem/niem-core/2.0"
+  xmlns:em="http://niem.gov/niem/domains/emergencyManagement/2.0"
+  xmlns:j="http://niem.gov/niem/domains/jxdm/4.0"
+  xmlns:s="http://niem.gov/niem/structures/2.0">
+  <apco-alarm:AlarmIdentifier>EVT-12345</apco-alarm:AlarmIdentifier>
+  <apco-alarm:AlarmTypeText>Fire</apco-alarm:AlarmTypeText>
+  <apco-alarm:PremisesName>Sample Building</apco-alarm:PremisesName>
+  <nc:LocationStreet>
+    <nc:StreetFullText>123 Main St</nc:StreetFullText>
+  </nc:LocationStreet>
+  <nc:LocationCityName>Springfield</nc:LocationCityName>
+  <nc:LocationStateCode>IL</nc:LocationStateCode>
+  <nc:LocationPostalCode>62701</nc:LocationPostalCode>
+  <nc:ContactPerson>
+    <nc:PersonName>
+      <nc:PersonFullName>John Doe</nc:PersonFullName>
+    </nc:PersonName>
+  </nc:ContactPerson>
+  <nc:ContactTelephoneNumber>
+    <nc:TelephoneNumberFullID>555-123-4567</nc:TelephoneNumberFullID>
+  </nc:ContactTelephoneNumber>
+  <nc:ActivityDate>
+    <nc:DateTime>2025-01-01T12:34:56Z</nc:DateTime>
+  </nc:ActivityDate>
+</apco-alarm:ExternalAlarm>

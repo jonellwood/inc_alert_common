@@ -1,0 +1,528 @@
+openapi: 3.1.0
+info:
+  title: Southern Software Generic CFS Listener API
+  version: 1.0.0
+  summary: Developer-friendly OpenAPI spec generated from vendor field documentation.
+  description: |
+    This OpenAPI document models the Generic CFS Listener endpoints described in the
+    vendor PDF. Some response shapes were not fully documented in the source, so a few
+    response bodies below are practical inferred examples rather than vendor-certified contracts.
+
+servers:
+  - url: https://redfive.berkeleycountysc.com
+    description: Server with webhooks and ingestion and parsing engines
+
+tags:
+  - name: CFS
+  - name: Dataset
+  - name: Notes
+  - name: Location
+  - name: Attachments
+  - name: Person
+  - name: Vehicle
+
+paths:
+  /CFS:
+    get:
+      tags: [CFS]
+      summary: Retrieve CFS records
+      description: Vendor documentation lists GET as supported for this path, but query parameters and response shape were not specified.
+      parameters:
+        - in: query
+          name: CFSNumber
+          schema: { type: string, maxLength: 25 }
+        - in: query
+          name: InterfaceRecordID
+          schema: { type: string, maxLength: 50 }
+        - in: query
+          name: RequestID
+          schema: { type: string, maxLength: 50 }
+      responses:
+        '200':
+          description: CFS lookup result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccessResponse'
+              examples:
+                example:
+                  value:
+                    success: true
+                    requestId: req-1001
+                    cfsNumber: '240001234'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags: [CFS]
+      summary: Create a new CFS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CFSCreateRequest'
+            examples:
+              basic:
+                value:
+                  RequestID: 'req-1001'
+                  InterfaceRecordID: 'portal-23892'
+                  CallTypeAlias: 'ANIMAL_COMPLAINT'
+                  IncStreetNum: 123
+                  IncStreetName: 'MAIN ST'
+                  IncCommunity: 'MONCKS CORNER'
+                  CallerName: 'John Doe'
+                  CallerPhone: '8435551212'
+                  XCoor: -80.0132
+                  YCoor: 33.1962
+                  Note: 'Dog running loose'
+      responses:
+        '200':
+          description: CFS created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CFSCreateResponse'
+              examples:
+                created:
+                  value:
+                    success: true
+                    RequestID: 'req-1001'
+                    CFSNumber: '240001234'
+                    message: 'Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /CFSCallType:
+    patch:
+      tags: [CFS]
+      summary: Update call type for an existing CFS
+      description: Requires (CFSNumber or InterfaceRecordID) and CallTypeAlias.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CFSCallTypePatchRequest'
+      responses:
+        '200':
+          description: Call type updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordMutationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /Dataset:
+    get:
+      tags: [Dataset]
+      summary: Retrieve enabled CAD datasets
+      responses:
+        '200':
+          description: Dataset list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DatasetItem'
+              examples:
+                datasets:
+                  value:
+                    - Guid: '60430A67-EED4-49F0-9981-A528A0030A07'
+                      Name: 'CallType'
+                    - Guid: '83E37E98-3122-4711-A263-2A45CD18C4BB'
+                      Name: 'CFSPriority'
+
+  /CFSLocation:
+    patch:
+      tags: [Location]
+      summary: Add or update a CFS location
+      description: Requires (CFSNumber or InterfaceRecordID) and (StreetName or Intersection).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CFSLocationPatchRequest'
+      responses:
+        '200':
+          description: Location added or updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordMutationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /CFSNote:
+    post:
+      tags: [Notes]
+      summary: Add a note to a CFS
+      description: Requires (CFSNumber or InterfaceRecordID) and Note.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CFSNoteRequest'
+      responses:
+        '200':
+          description: Note saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordMutationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /CFSPathAttach:
+    post:
+      tags: [Attachments]
+      summary: Attach a URL/path to a CFS
+      description: Requires (CFSNumber or ParentRecordID) and Description and Path.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CFSPathAttachRequest'
+      responses:
+        '200':
+          description: Path attached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordMutationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /CFSPerson:
+    post:
+      tags: [Person]
+      summary: Add a person to a CFS
+      description: Requires (CFSNumber or InterfaceRecordID) and one identifying/detail field.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CFSPersonRequest'
+      responses:
+        '200':
+          description: Person saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordMutationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /CFSVehicle:
+    post:
+      tags: [Vehicle]
+      summary: Add a vehicle to a CFS
+      description: Requires (CFSNumber or InterfaceRecordID) and one vehicle identifier/detail field.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CFSVehicleRequest'
+      responses:
+        '200':
+          description: Vehicle saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordMutationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    GenericSuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        requestId: { type: string }
+        cfsNumber: { type: string }
+        message: { type: string }
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, default: false }
+        message: { type: string }
+      required: [success, message]
+      additionalProperties: true
+
+    RecordMutationResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        RequestID: { type: string }
+        CFSNumber: { type: string }
+        RecordID: { type: integer, format: int64 }
+        message: { type: string }
+      additionalProperties: true
+
+    CFSCreateResponse:
+      allOf:
+        - $ref: '#/components/schemas/RecordMutationResponse'
+
+    DatasetItem:
+      type: object
+      properties:
+        RequestID: { type: string, maxLength: 50 }
+        Guid: { type: string, format: uuid }
+        Name: { type: string, maxLength: 50 }
+      required: [Guid]
+
+    CFSCreateRequest:
+      type: object
+      properties:
+        RequestID: { type: string, maxLength: 50 }
+        CFSNumber:
+          {
+            type: string,
+            maxLength: 25,
+            description: Only for future update scenarios; not for create requests,
+          }
+        ActiveCFS:
+          {
+            type: boolean,
+            description: Required only if CFSCreateActiveStatus is configured as InMsg,
+          }
+        InterfaceRecordID: { type: string, maxLength: 50 }
+        Jurisdiction: { type: string, maxLength: 10 }
+        CFSStartWhen:
+          { type: string, format: date-time, description: Local agency time }
+        IncAptLoc: { type: string, maxLength: 60 }
+        IncCommunity: { type: string, maxLength: 100 }
+        IncIntersection: { type: string, maxLength: 255 }
+        IncPreDir: { type: string, maxLength: 2 }
+        IncState: { type: string, maxLength: 4 }
+        IncStreetName: { type: string, maxLength: 100 }
+        IncStreetNum: { type: integer }
+        CallerAptLoc: { type: string, maxLength: 60 }
+        CallerCommunity: { type: string, maxLength: 100 }
+        CallerPreDir: { type: string, maxLength: 2 }
+        CallerState: { type: string, maxLength: 4 }
+        CallerStreetName: { type: string, maxLength: 100 }
+        CallerStreetNum: { type: integer }
+        CallerName: { type: string, maxLength: 50 }
+        CallerPhone:
+          { type: string, maxLength: 15, description: No punctuation }
+        CallTypeAlias:
+          {
+            type: string,
+            maxLength: 50,
+            description: Lookup by Alias,
+            then CallType,
+            then CallTypeID,
+          }
+        InProgress: { type: boolean }
+        AlarmLevel: { type: integer, minimum: 0, maximum: 255 }
+        PriorityAlias: { type: string, maxLength: 50 }
+        HowReceived: { type: string, maxLength: 50 }
+        XCoor: { type: number, format: double, description: Longitude, WGS84 }
+        YCoor: { type: number, format: double, description: Latitude, WGS84 }
+        ZCoor: { type: number, format: double, description: Altitude in feet }
+        AgencyComboField1: { type: string, maxLength: 50 }
+        AgencyComboField2: { type: string, maxLength: 50 }
+        AgencyComboField3: { type: string, maxLength: 50 }
+        AgencyBitField1: { type: boolean }
+        AgencyBitField2: { type: boolean }
+        Comment: { type: string, maxLength: 255 }
+        Note: { type: string, maxLength: 4000 }
+        DispositionAlias:
+          {
+            type: string,
+            maxLength: 50,
+            description: Should not be sent when creating a new CFS,
+          }
+        CreateBy: { type: string, maxLength: 50 }
+      required: [CallTypeAlias]
+      additionalProperties: false
+
+    CFSCallTypePatchRequest:
+      type: object
+      properties:
+        RequestID: { type: string, maxLength: 50 }
+        CFSNumber: { type: string, maxLength: 25 }
+        InterfaceRecordID: { type: string, maxLength: 50 }
+        RecordID:
+          {
+            type: integer,
+            format: int64,
+            description: ID generated when saving a CallType record,
+          }
+        CallTypeAlias: { type: string, maxLength: 50 }
+        InProgress: { type: boolean }
+        CreateBy: { type: string, maxLength: 50 }
+      required: [CallTypeAlias]
+      anyOf:
+        - required: [CFSNumber]
+        - required: [InterfaceRecordID]
+      additionalProperties: false
+
+    CFSLocationPatchRequest:
+      type: object
+      properties:
+        RequestID: { type: string, maxLength: 50 }
+        CFSNumber: { type: string, maxLength: 25 }
+        InterfaceRecordID: { type: string, maxLength: 50 }
+        RecordID: { type: integer, format: int64 }
+        StreetNum: { type: integer }
+        PreDir: { type: string, maxLength: 2 }
+        StreetName: { type: string, maxLength: 100 }
+        AptLoc: { type: string, maxLength: 60 }
+        Community: { type: string, maxLength: 100 }
+        State: { type: string, maxLength: 4 }
+        Intersection: { type: string, maxLength: 255 }
+        XCoor: { type: number, format: double }
+        YCoor: { type: number, format: double }
+        ZCoor: { type: number, format: double }
+        Note: { type: string, maxLength: 100 }
+        CreateBy: { type: string, maxLength: 50 }
+      anyOf:
+        - required: [CFSNumber]
+        - required: [InterfaceRecordID]
+      oneOf:
+        - required: [StreetName]
+        - required: [Intersection]
+      additionalProperties: false
+
+    CFSNoteRequest:
+      type: object
+      properties:
+        RequestID: { type: string, maxLength: 50 }
+        CFSNumber: { type: string, maxLength: 25 }
+        InterfaceRecordID: { type: string, maxLength: 50 }
+        RecordID: { type: integer, format: int64 }
+        Note: { type: string, maxLength: 1000 }
+        CreateBy: { type: string, maxLength: 50 }
+        DisciplineLock: { type: integer, minimum: 0, maximum: 255 }
+      required: [Note]
+      anyOf:
+        - required: [CFSNumber]
+        - required: [InterfaceRecordID]
+      additionalProperties: false
+
+    CFSPathAttachRequest:
+      type: object
+      properties:
+        RequestID: { type: string, maxLength: 50 }
+        CFSNumber: { type: string, maxLength: 25 }
+        ParentRecordID: { type: string, maxLength: 25 }
+        RecordID: { type: integer, format: int64 }
+        Description: { type: string, maxLength: 100 }
+        Path: { type: string, maxLength: 1000, format: uri }
+        CreateBy: { type: string, maxLength: 50 }
+      required: [Description, Path]
+      anyOf:
+        - required: [CFSNumber]
+        - required: [ParentRecordID]
+      additionalProperties: false
+
+    CFSPersonRequest:
+      type: object
+      properties:
+        RequestID: { type: string, maxLength: 50 }
+        CFSNumber: { type: string, maxLength: 25 }
+        InterfaceRecordID: { type: string, maxLength: 50 }
+        RecordID: { type: integer, format: int64 }
+        InvolvementType: { type: string, maxLength: 50 }
+        LastName: { type: string, maxLength: 50 }
+        FirstName: { type: string, maxLength: 50 }
+        MiddleName: { type: string, maxLength: 50 }
+        SSN:
+          {
+            type: string,
+            maxLength: 15,
+            description: Numbers only,
+            no punctuation,
+          }
+        OLN: { type: string, maxLength: 15 }
+        OLNState: { type: string, maxLength: 4 }
+        OIDNumber: { type: string, maxLength: 50 }
+        DOB: { type: string, format: date }
+        Race: { type: string, maxLength: 1 }
+        Sex: { type: string, maxLength: 1 }
+        EyeColor: { type: string, maxLength: 5 }
+        HairColor: { type: string, maxLength: 5 }
+        Height: { type: integer, description: Example 501 means 5 feet 1 inch }
+        Weight: { type: integer, minimum: 1, maximum: 1000 }
+        Phone: { type: string, maxLength: 15, description: No punctuation }
+        PersonDescriptoin:
+          {
+            type: string,
+            maxLength: 500,
+            description: Vendor PDF contains this exact spelling,
+          }
+        ConsentGiven: { type: boolean }
+        AgencyPersonWhenField1: { type: string, format: date-time }
+        AgencyPersonComboField1: { type: string, maxLength: 50 }
+        AgencyPersonBitField1: { type: boolean }
+        UnitID: { type: string, maxLength: 50 }
+        CreateBy: { type: string, maxLength: 50 }
+        CreateWhen: { type: string, format: date-time }
+        DisciplineLock: { type: integer, minimum: 0, maximum: 255 }
+      anyOf:
+        - required: [CFSNumber]
+        - required: [InterfaceRecordID]
+      oneOf:
+        - required: [LastName]
+        - required: [SSN]
+        - required: [OIDNumber]
+        - required: [Race]
+        - required: [Sex]
+        - required: [PersonDescriptoin]
+      additionalProperties: false
+
+    CFSVehicleRequest:
+      type: object
+      properties:
+        RequestID: { type: string, maxLength: 50 }
+        CFSNumber: { type: string, maxLength: 25 }
+        InterfaceRecordID: { type: string, maxLength: 50 }
+        RecordID: { type: integer, format: int64 }
+        InvolvementType: { type: string, maxLength: 50 }
+        Tag: { type: string, maxLength: 25 }
+        TagState: { type: string, maxLength: 4 }
+        VIN: { type: string, maxLength: 50 }
+        Make: { type: string, maxLength: 50 }
+        Model: { type: string, maxLength: 50 }
+        Color: { type: string, maxLength: 10 }
+        SecondaryColor: { type: string, maxLength: 10 }
+        VehicleYear: { type: string, maxLength: 4 }
+        VehicleStyle: { type: string, maxLength: 15 }
+        VehicleDescription: { type: string, maxLength: 500 }
+        VehicleSearched: { type: boolean }
+        AgencyVehicleWhenField1: { type: string, format: date-time }
+        AgencyVehicleComboField1: { type: string, maxLength: 50 }
+        AgencyVehicleBitField1: { type: boolean }
+        UnitID: { type: string, maxLength: 50 }
+        CreateBy: { type: string, maxLength: 50 }
+        CreateWhen: { type: string, format: date-time }
+        DisciplineLock: { type: integer, minimum: 0, maximum: 255 }
+      anyOf:
+        - required: [CFSNumber]
+        - required: [InterfaceRecordID]
+      oneOf:
+        - required: [Tag]
+        - required: [VIN]
+        - required: [Make]
+        - required: [Model]
+        - required: [VehicleDescription]
+      additionalProperties: false
