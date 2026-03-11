@@ -31,10 +31,10 @@ return [
     ],
 
     // Your webhook endpoint where RapidSOS will send data
-    'webhook_endpoint' => 'https://my.berkeleycountysc.gov/redfive/webhooks/rapidsos_webhook.php',
+    'webhook_endpoint' => 'https://redfive.berkeleycountysc.gov/webhooks/rapidsos_webhook.php',
 
     // Target endpoint for processing alerts (your existing API)
-    'target_endpoint' => 'https://my.berkeleycountysc.gov/redfive/api/writeToDB.php',
+    'target_endpoint' => 'https://redfive.berkeleycountysc.gov/api/writeToDB.php',
 
     // Webhook events to subscribe to (official WebSocket Events API v1.1.1)
     'default_events' => [
