@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../lib/auth_check_admin.php';
 // Log Viewer - Alternative access to log files
 // Use this when direct .log file access is forbidden by server
 
@@ -35,6 +36,7 @@ foreach (glob($apiLogDir . '*.log') as $file) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -50,22 +52,27 @@ foreach (glob($apiLogDir . '*.log') as $file) {
             padding-left: 1rem;
             margin-bottom: 0.5rem;
         }
+
         .log-entry:hover {
             background-color: #f3f4f6;
             border-left-color: #3b82f6;
         }
+
         .log-entry.error {
             border-left-color: #ef4444;
             background-color: #fef2f2;
         }
+
         .log-entry.warning {
             border-left-color: #f59e0b;
             background-color: #fffbeb;
         }
+
         .log-entry.success {
             border-left-color: #10b981;
             background-color: #f0fdf4;
         }
+
         .json-viewer {
             background: #1a1a1a;
             color: #e6e6e6;
@@ -75,6 +82,7 @@ foreach (glob($apiLogDir . '*.log') as $file) {
         }
     </style>
 </head>
+
 <body class="bg-gray-50">
     <div class="container mx-auto px-6 py-8">
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -82,7 +90,7 @@ foreach (glob($apiLogDir . '*.log') as $file) {
                 <i class="fas fa-file-alt text-blue-600 mr-2"></i>
                 Log Viewer
             </h1>
-            
+
             <!-- Controls -->
             <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div>
@@ -97,14 +105,14 @@ foreach (glob($apiLogDir . '*.log') as $file) {
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Lines to Show</label>
-                    <input type="number" name="lines" value="<?php echo $lines; ?>" min="10" max="1000" 
-                           class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    <input type="number" name="lines" value="<?php echo $lines; ?>" min="10" max="1000"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Search (optional)</label>
-                    <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" 
-                           placeholder="Filter entries..." 
-                           class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>"
+                        placeholder="Filter entries..."
+                        class="w-full border border-gray-300 rounded-md px-3 py-2">
                 </div>
                 <div class="flex items-end">
                     <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
@@ -137,7 +145,7 @@ foreach (glob($apiLogDir . '*.log') as $file) {
                             // Try to parse as JSON
                             $json = json_decode($line, true);
                             $class = '';
-                            
+
                             if ($json) {
                                 // Determine class based on action or error
                                 if (isset($json['action'])) {
@@ -215,4 +223,5 @@ foreach (glob($apiLogDir . '*.log') as $file) {
         }, 10000);
     </script>
 </body>
+
 </html>

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../lib/auth_check_admin.php';
 // RapidSOS Subscription Management
 
 require_once __DIR__ . '/../config/rapidsos_config.php';

@@ -1,6 +1,5 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
@@ -9,6 +8,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
+
+// Require authentication (returns JSON 401 if not logged in)
+require_once __DIR__ . '/../lib/api_auth_check.php';
 
 // Include database configuration
 require_once '../secrets/db.php';
