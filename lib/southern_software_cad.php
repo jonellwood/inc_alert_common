@@ -266,12 +266,71 @@ class SouthernSoftwareCAD
         $name = preg_replace('/\b(?:APT\.?|APARTMENT|LOT\.?|UNIT\.?|SUITE\.?|STE\.?|#)\s*[A-Z0-9#\-\.]+/i', '', $name);
         $name = trim($name);
 
+        // Apply street suffix abbreviations (STREET→ST, DRIVE→DR, etc.) and uppercase
+        $name = self::abbreviateStreetName($name);
+
         return [
             'number' => $number,
             'name' => $name,
             'pre_dir' => $preDir,
             'apt' => $apt,
         ];
+    }
+
+    /**
+     * Abbreviate street suffixes to CAD-standard format and uppercase.
+     * e.g. "Etiwan Park Street" → "ETIWAN PARK ST"
+     */
+    private static function abbreviateStreetName($name)
+    {
+        if (!$name) return null;
+
+        $abbreviations = [
+            'alley' => 'ALY',
+            'avenue' => 'AV',
+            'boulevard' => 'BLVD',
+            'circle' => 'CIR',
+            'court' => 'CT',
+            'cove' => 'CV',
+            'creek' => 'CRK',
+            'drive' => 'DR',
+            'extension' => 'EXT',
+            'expressway' => 'EXPY',
+            'highway' => 'HWY',
+            'lane' => 'LN',
+            'landing' => 'LNDG',
+            'loop' => 'LOOP',
+            'manor' => 'MNR',
+            'parkway' => 'PKWY',
+            'pass' => 'PASS',
+            'path' => 'PATH',
+            'place' => 'PL',
+            'plaza' => 'PLZ',
+            'point' => 'PT',
+            'ridge' => 'RDG',
+            'road' => 'RD',
+            'row' => 'ROW',
+            'run' => 'RUN',
+            'square' => 'SQ',
+            'street' => 'ST',
+            'terrace' => 'TER',
+            'trail' => 'TR',
+            'turnpike' => 'TPKE',
+            'way' => 'WAY',
+        ];
+
+        $name = strtolower(trim($name));
+        $parts = explode(' ', $name);
+
+        if (count($parts) > 1) {
+            $lastPart = array_pop($parts);
+            if (isset($abbreviations[$lastPart])) {
+                $lastPart = $abbreviations[$lastPart];
+            }
+            $parts[] = $lastPart;
+        }
+
+        return strtoupper(implode(' ', $parts));
     }
 
     private function log($action, $data)

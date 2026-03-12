@@ -256,19 +256,33 @@ function handleUpdateEvent($eventType, $alertId, $alertData, $rawPayload)
         ];
     }
 
-    // --- Look up the CFS number for this alert ---
-    $cfsNumber = lookupCfsNumber($alertId);
+    // --- Look up the CFS number for this alert (with retry for race conditions) ---
+    $cfsNumber = null;
+    $maxRetries = 2;
+    for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
+        $cfsNumber = lookupCfsNumber($alertId);
+        if ($cfsNumber) break;
+        if ($attempt < $maxRetries) {
+            logWebhookActivity('cfs_lookup_retry', [
+                'alert_id' => $alertId,
+                'attempt' => $attempt + 1,
+                'event_type' => $eventType
+            ]);
+            sleep(3);
+        }
+    }
     if (!$cfsNumber) {
         logWebhookActivity('cfs_lookup_failed', [
             'alert_id' => $alertId,
-            'event_type' => $eventType
+            'event_type' => $eventType,
+            'retries_attempted' => $maxRetries
         ]);
         return [
             'success' => false,
             'action' => 'cfs_lookup_failed',
             'event_type' => $eventType,
             'alert_id' => $alertId,
-            'message' => 'No CFS found for this alert_id — cannot apply update'
+            'message' => 'No CFS found for this alert_id after ' . ($maxRetries + 1) . ' attempts'
         ];
     }
 
@@ -300,25 +314,14 @@ function handleUpdateEvent($eventType, $alertId, $alertData, $rawPayload)
 
     switch ($eventType) {
         case 'alert.location_update':
-            // PATCH /CFSLocation with new coordinates and civic address
-            $locationData = [
-                'latitude' => $body['geodetic']['latitude'] ?? null,
-                'longitude' => $body['geodetic']['longitude'] ?? null,
-                'altitude' => $body['geodetic']['altitude'] ?? null,
-                'street_1' => $body['civic']['street_1'] ?? null,
-                'street_2' => $body['civic']['street_2'] ?? null,
-                'city' => $body['civic']['city'] ?? null,
-                'state' => $body['civic']['state'] ?? null,
-            ];
-            $cadResult = $cadClient->updateLocation($cfsNumber, $locationData);
-
-            // Also add a note so dispatchers see the location changed
+            // Add a note with the updated location info (don't PATCH the CFS location mid-call)
             $lat = $body['geodetic']['latitude'] ?? '?';
             $lon = $body['geodetic']['longitude'] ?? '?';
             $addr = $body['civic']['street_1'] ?? 'unknown';
             $city = $body['civic']['city'] ?? '';
-            $note = "LOCATION UPDATED: {$addr}, {$city} | GPS: {$lat}, {$lon}";
-            $cadClient->addNote($cfsNumber, $note);
+            $state = $body['civic']['state'] ?? '';
+            $note = "LOCATION UPDATE: {$addr}, {$city} {$state} | GPS: {$lat}, {$lon}";
+            $cadResult = $cadClient->addNote($cfsNumber, $note);
             break;
 
         case 'alert.status_update':
