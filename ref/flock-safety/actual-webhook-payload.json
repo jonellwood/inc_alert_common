@@ -1,0 +1,79 @@
+{
+	"source": "flocksafety",
+	"alerts": [
+		{
+			"alert_id": "flock-74305555-ac94-4175-a0fc-35b932b0cf6c",
+			"source_id": "74305555-ac94-4175-a0fc-35b932b0cf6c",
+			"reference_number": "74305555-ac94-4175-a0fc-35b932b0cf6c",
+			"source_system": "FlockSafety",
+			"service_provider_name": "Flock Safety",
+			"emergency_type": {
+				"name": "LPR_ALERT",
+				"display_name": "LPR Alert - Sex Offender"
+			},
+			"call_type_alias": "FLOCK BOLO",
+			"location": {
+				"geodetic": {
+					"latitude": 33.0455700334353,
+					"longitude": -80.10627646899054,
+					"uncertainty_radius": null
+				},
+				"civic": {
+					"street_1": null,
+					"street_2": null,
+					"city": null,
+					"state": null,
+					"zip_code": null,
+					"country": "United States",
+					"name": "LR#007 College Park Rd @ N Main St NB"
+				}
+			},
+			"contact": {
+				"full_name": "Flock Safety LPR",
+				"first_name": null,
+				"last_name": null,
+				"phone": null,
+				"email": null
+			},
+			"user": {
+				"full_name": "Flock Safety LPR",
+				"phone_number": null,
+				"email": null,
+				"first_name": null,
+				"last_name": null
+			},
+			"description": "BOLO: 7722LY (SOUTH_CAROLINA) - Sex Offender",
+			"comments": "Flock Safety LPR Alert\nPlate: 7722LY (SOUTH_CAROLINA)\nPlate Confidence: 100%\nReason: Sex Offender\nHotlist: NCIC\nCamera: LR#007 College Park Rd @ N Main St NB\nNetwork: Berkeley County SC SO\nDetails: https:\/\/hotlist.flocksafety.com\/img\/tar-nD3k49HmRrOvCl9wIJyb-Q\nImage: https:\/\/flock-hibiki-inbox.s3.us-east-1.amazonaws.com\/policy\/78945dca-4857-45b1-a7f4-def9f5ad9efd\/raw\/b10d9c49-623b-5bbc-be41-acad65ddcaec.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVRB6HLHG6TLZFBEI%2F20260312%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260312T145916Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&x-id=GetObject&X-Amz-Signature=59e0eecffc55aa3b0ca19e2b03f78709aea78ae5576e307734158fdde4117d0e",
+			"status": {
+				"name": "ACTIVE"
+			},
+			"created_time": 1773327545000,
+			"submitted_time": 1773327556000,
+			"last_updated_time": 1773327556000,
+			"incident_time": 1773327545000,
+			"vehicle": {
+				"plate_number": "7722LY",
+				"plate_state": "SO",
+				"make": null,
+				"model": null,
+				"color": null
+			},
+			"additional_data": {
+				"device_external_id": "949692b4-3110-413e-a93c-52fbc5a9885a",
+				"network_name": "Berkeley County SC SO",
+				"network_external_id": "1edcee94-5bda-11ef-a8b3-b3d463b40c54",
+				"image_url": "https:\/\/flock-hibiki-inbox.s3.us-east-1.amazonaws.com\/policy\/78945dca-4857-45b1-a7f4-def9f5ad9efd\/raw\/b10d9c49-623b-5bbc-be41-acad65ddcaec.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVRB6HLHG6TLZFBEI%2F20260312%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260312T145916Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&x-id=GetObject&X-Amz-Signature=59e0eecffc55aa3b0ca19e2b03f78709aea78ae5576e307734158fdde4117d0e",
+				"image_expiration": "2026-03-19T14:59:16Z",
+				"details_url": "https:\/\/hotlist.flocksafety.com\/img\/tar-nD3k49HmRrOvCl9wIJyb-Q",
+				"plate_confidence": 1,
+				"state_confidence": 0.98779296875,
+				"sources": [
+					{
+						"name": "NCIC",
+						"reason": "Sex Offender"
+					}
+				]
+			}
+		}
+	]
+}

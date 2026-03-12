@@ -1,0 +1,27 @@
+{
+	"deviceLat": 38.3603811298528,
+	"deviceLong": -121.96761042698364,
+	"deviceName": "#01 - Flock Test @ Flock Dr - WB",
+	"deviceExternalId": "00000000-0000-0000-0000-000000000000",
+	"networkName": "Flock City Falcons",
+	"networkExternalId": "00000000-0000-0000-0000-000000000000",
+	"objectId": "00000000-0000-0000-0000-000000000000",
+	"eventTime": "2023-05-18T17:07:02.001Z",
+	"imageUrl": "https://flock-test.s3.amazonaws.com/policy/00000000-0000-0000-0000-000000000000/raw/00000000-0000-0000-0000-000000000000.jpg?X-Amz-Algorithm=***&X-Amz-Credential=***",
+	"imageExpiration": "2023-05-25T17:08:11Z",
+	"detailsUrl": "https://hotlist.flocksafety.com/rtt/123",
+	"ocr": {
+		"label": "ABC123",
+		"labelConfidence": 0.8959371447563171,
+		"state": "georgia",
+		"stateConfidence": 0.9962165951728821
+	},
+	"sources": [
+		{
+			"name": "My custom hotlist",
+			"reason": "Stolen Vehicle",
+			"caseNumber": "2025-0456789",
+			"customHotlistAudience": "organization"
+		}
+	]
+}

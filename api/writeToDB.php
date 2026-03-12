@@ -92,7 +92,18 @@ function extractRapidSOSData($data)
         $extracted['sSiteType'] = $alert['site_type']['display_name'] ?? $alert['site_type']['name'] ?? null;
         $extracted['sServiceProviderName'] = $alert['service_provider_name'] ?? null;
         $extracted['sDescription'] = $alert['description'] ?? null;
+        $extracted['sComments'] = $alert['comments'] ?? null;
         $extracted['sStatus'] = $alert['status']['name'] ?? null;
+
+        // Vehicle data (from Flock LPR or other sources)
+        if (isset($alert['vehicle'])) {
+            $vehicle = $alert['vehicle'];
+            $extracted['sVehicleMake'] = $vehicle['make'] ?? null;
+            $extracted['sVehicleModel'] = $vehicle['model'] ?? null;
+            $extracted['sVehicleColor'] = $vehicle['color'] ?? null;
+            $extracted['sVehiclePlateNumber'] = $vehicle['plate_number'] ?? null;
+            $extracted['sVehiclePlateState'] = $vehicle['plate_state'] ?? null;
+        }
 
         // Timing data
         $extracted['sIncidentTimeRaw'] = $alert['incident_time'] ?? null;
@@ -118,9 +129,26 @@ function extractRapidSOSData($data)
             $extracted['sAgency'] = $alert['covering_psap']['name'] ?? null;
         }
 
-        // Central station info
+        // Central station / authorized entity info
         if (isset($alert['authorized_entity'])) {
             $extracted['sCentralStationPhone'] = sanitizePhoneNumber($alert['authorized_entity']['phone'] ?? null);
+        }
+
+        // Fallback: if no user/contact data, use authorized_entity as caller info
+        // This is common for app-based alerts (Grubhub, ADT, etc.) where the 
+        // monitoring company is the best callback contact available.
+        if (empty($extracted['sContactFullName']) && empty($extracted['sContactPhone'])) {
+            // Try authorized_entity first (the monitoring company that dispatched)
+            if (isset($alert['authorized_entity'])) {
+                $aeName = $alert['authorized_entity']['name'] ?? null;
+                $aePhone = sanitizePhoneNumber($alert['authorized_entity']['phone'] ?? null);
+                if ($aeName) $extracted['sContactFullName'] = $aeName;
+                if ($aePhone) $extracted['sContactPhone'] = $aePhone;
+            }
+            // If still empty, try service_provider_name as caller name
+            if (empty($extracted['sContactFullName']) && !empty($alert['service_provider_name'])) {
+                $extracted['sContactFullName'] = $alert['service_provider_name'];
+            }
         }
     }
     // Handle RapidSOS Variables format (has "variables" object)
@@ -390,6 +418,17 @@ function parseStreetAddress($streetAddress)
     ];
 }
 
+function getHowReceived($sourceSystem)
+{
+    $source = strtolower($sourceSystem);
+    if (strpos($source, 'flock') !== false) {
+        return 'FLOCK';
+    } elseif (strpos($source, 'helpme911') !== false) {
+        return 'HELPME911';
+    }
+    return 'RAPIDSOS';
+}
+
 function sendToCad($recordId, $conn)
 {
     // Debug: Log function entry immediately
@@ -423,7 +462,7 @@ function sendToCad($recordId, $conn)
 
         $cadData = [
             'InterfaceRecordID' => $record['id'],
-            'CallTypeAlias' => $record['sCallType'] ?? '104 ALARMS - LAW', // Use mapped value from webhook, fallback to default
+            'CallTypeAlias' => $record['sCallType'] ?? '104 ALARMS - LAW',
             'CallerName' => $record['sContactFullName'],
             'CallerPhone' => $record['sContactPhone'],
             'XCoor' => (float)$record['iLongitude'],
@@ -435,8 +474,37 @@ function sendToCad($recordId, $conn)
                 "Service Provider: " . ($record['sServiceProviderName'] ?? 'Unknown') . "\n" .
                 "Original Description: " . ($record['sDescription'] ?? 'No description') . "\n" .
                 "GPS Coordinates: " . $record['iLatitude'] . ", " . $record['iLongitude'] . "\n" .
-                "Map Link: https://www.openstreetmap.org/search?query=" . $record['iLatitude'] . "%2C" . $record['iLongitude'] . "#map=14/" . $record['iLatitude'] . "/" . $record['iLongitude']
+                "Map Link: https://www.openstreetmap.org/search?query=" . $record['iLatitude'] . "%2C" . $record['iLongitude'] . "#map=14/" . $record['iLatitude'] . "/" . $record['iLongitude'],
+            // New fields - source-aware HowReceived
+            'HowReceived' => getHowReceived($record['sSourceSystem'] ?? ''),
+            'InProgress' => true,
+            'CreateBy' => 'REDFIVE',
+            'AlarmLevel' => 1,
+            'AgencyComboField1' => $record['sSourceId'],  // RapidSOS alert_id for cross-reference
         ];
+
+        // Add state if available
+        if (!empty($record['sState'])) {
+            $cadData['IncState'] = strtoupper(substr($record['sState'], 0, 4));
+        }
+
+        // Add CFSStartWhen from incident time
+        if (!empty($record['sIncidentTimeRaw'])) {
+            $ts = is_numeric($record['sIncidentTimeRaw'])
+                ? (int)($record['sIncidentTimeRaw'] / 1000)
+                : strtotime($record['sIncidentTimeRaw']);
+            if ($ts) {
+                $cadData['CFSStartWhen'] = date('Y-m-d\TH:i:s', $ts);
+            }
+        }
+
+        // Set caller location same as incident if available
+        if (!empty($record['sContactFullName'])) {
+            $cadData['CallerCommunity'] = $record['sCity'] ?? null;
+            if (!empty($record['sState'])) {
+                $cadData['CallerState'] = strtoupper(substr($record['sState'], 0, 4));
+            }
+        }
 
         // Parse street address first (from civic data)
         $streetParts = parseStreetAddress($record['sStreetAddress']);
@@ -470,6 +538,32 @@ function sendToCad($recordId, $conn)
                 $cadData['IncPreDir'] = $geocodedParts['pre_dir'];
                 $cadData['IncAptLoc'] = $geocodedParts['apt'];
                 $cadData['IncCommunity'] = $addressInfo['city'];
+
+                // Write geocoded address back to DB so the web UI shows it
+                try {
+                    $geoUpdate = $conn->prepare("
+                        UPDATE IncomingAlertData 
+                        SET sStreetAddress = :street, sCity = :city, sState = :state, iZipCode = :zip,
+                            sFullAddress = :full_address
+                        WHERE id = :id
+                    ");
+                    $fullAddr = implode(', ', array_filter([
+                        $addressInfo['street'],
+                        $addressInfo['city'],
+                        $addressInfo['state'],
+                        $addressInfo['zip']
+                    ]));
+                    $geoUpdate->execute([
+                        ':street' => $addressInfo['street'],
+                        ':city' => $addressInfo['city'],
+                        ':state' => $addressInfo['state'],
+                        ':zip' => $addressInfo['zip'],
+                        ':full_address' => $fullAddr,
+                        ':id' => $recordId
+                    ]);
+                } catch (Exception $geoErr) {
+                    error_log("Failed to write geocoded address to DB: " . $geoErr->getMessage());
+                }
             } else {
                 // Last resort - use whatever we have
                 $cadData['IncStreetNum'] = $streetParts['number'];
@@ -577,6 +671,30 @@ function sendToCad($recordId, $conn)
                 ':cfs_number' => $cfsNumber,
                 ':id' => $recordId
             ]);
+
+            // Add vehicle to CFS if plate/vehicle data exists
+            if ($cfsNumber && !empty($record['sVehiclePlateNumber'])) {
+                try {
+                    require_once __DIR__ . '/../lib/southern_software_cad.php';
+                    $cadClient = new SouthernSoftwareCAD();
+                    $vehicleData = [
+                        'plate_number' => $record['sVehiclePlateNumber'],
+                        'plate_state' => $record['sVehiclePlateState'],
+                        'make' => $record['sVehicleMake'],
+                        'model' => $record['sVehicleModel'],
+                        'color' => $record['sVehicleColor'],
+                    ];
+                    // Add a description from the alert reason for context
+                    $vehicleDesc = $record['sDescription'] ?? null;
+                    if ($vehicleDesc) {
+                        $vehicleData['description'] = substr($vehicleDesc, 0, 500);
+                    }
+                    $vehicleResult = $cadClient->addVehicle($cfsNumber, $vehicleData);
+                    error_log("CFSVehicle POST for CFS $cfsNumber: " . json_encode($vehicleResult));
+                } catch (Exception $vehErr) {
+                    error_log("CFSVehicle POST failed for CFS $cfsNumber: " . $vehErr->getMessage());
+                }
+            }
 
             return [
                 'status' => 'success',

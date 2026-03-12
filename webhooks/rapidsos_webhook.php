@@ -6,12 +6,30 @@ require_once __DIR__ . '/../config/rapidsos_config.php';
 require_once __DIR__ . '/../lib/rapidsos_auth.php';
 require_once __DIR__ . '/../lib/rapidsos_data_mapper.php';
 require_once __DIR__ . '/../lib/rapidsos_websocket_mapper.php';
+require_once __DIR__ . '/../lib/southern_software_cad.php';
+require_once __DIR__ . '/../secrets/db.php';
 
 // Set up configuration and authentication
 $config = require __DIR__ . '/../config/rapidsos_config.php';
 $auth = new RapidSOSAuth($config);
 $legacyMapper = new RapidSOSDataMapper();
 $websocketMapper = new RapidSOSWebSocketMapper();
+$cadClient = new SouthernSoftwareCAD();
+
+// Database connection for CFS lookups on update events
+$dbConn = null;
+try {
+    $dbConfig = new acoConfig();
+    $dbConn = new PDO(
+        "sqlsrv:Server={$dbConfig->serverName};Database={$dbConfig->database};ConnectionPooling=0;TrustServerCertificate=1;Encrypt=0",
+        $dbConfig->uid,
+        $dbConfig->pwd
+    );
+    $dbConn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (Exception $e) {
+    // DB failures should NOT block alert processing
+    error_log('Webhook DB connection failed (non-fatal): ' . $e->getMessage());
+}
 
 // Set response header
 header('Content-Type: application/json');
@@ -141,13 +159,42 @@ try {
     // Process each alert
     $results = [];
     foreach ($extractedData['alerts'] ?? [] as $alert) {
-        // Determine if this is a status update
+        // Determine event type from the webhook envelope
         $eventType = $payload['event_type'] ?? $payload['event'] ?? 'unknown';
-        $isStatusUpdate = ($eventType === 'alert.status_update');
 
-        $result = forwardAlertToWriteToDB($alert, $extractedData['format'], $isStatusUpdate);
+        // Extract alert_id from wherever it lives in this payload
+        $alertId = $alert['alert_id']
+            ?? $alert['body']['alert_id']
+            ?? $payload['body']['alert_id']
+            ?? 'unknown';
+
+        // Route based on event type:
+        // - alert.new → Create new CFS in CAD
+        // - All others → Log fully, update existing CFS (TODO: wire to SS PATCH/POST endpoints)
+        $updateEventTypes = [
+            'alert.status_update',
+            'alert.disposition_update',
+            'alert.location_update',
+            'alert.chat',
+            'alert.milestone',
+            'alert.multi_trip_signal',
+        ];
+
+        $isUpdateEvent = in_array($eventType, $updateEventTypes);
+
+        if ($isUpdateEvent) {
+            $result = handleUpdateEvent($eventType, $alertId, $alert, $payload);
+        } else {
+            // alert.new or unknown → create new CFS
+            $result = forwardAlertToWriteToDB($alert, $eventType, false);
+        }
+
         $results[] = $result;
-        logWebhookActivity('alert_processed', array_merge($result, ['is_update' => $isStatusUpdate]));
+        logWebhookActivity('alert_processed', array_merge($result, [
+            'event_type' => $eventType,
+            'alert_id' => $alertId,
+            'is_update' => $isUpdateEvent
+        ]));
     }
 
     // Send success response
@@ -161,25 +208,208 @@ try {
     sendResponse(500, 'Internal server error: ' . $e->getMessage());
 }
 
+/**
+ * Handle update events for existing alerts.
+ * Looks up the existing CFS by alert_id, then routes to the appropriate
+ * Southern Software PATCH/POST endpoint to update the call in real time.
+ */
+function handleUpdateEvent($eventType, $alertId, $alertData, $rawPayload)
+{
+    global $cadClient, $dbConn;
+
+    // Extract the body data (webhook format wraps in 'body')
+    $body = $alertData['body'] ?? $alertData;
+
+    // Log the full update event
+    $updateLogFile = __DIR__ . '/../logs/rapidsos_update_events.log';
+    $logEntry = [
+        'timestamp' => date('Y-m-d H:i:s'),
+        'event_type' => $eventType,
+        'alert_id' => $alertId,
+        'body' => $body,
+        'raw_payload' => $rawPayload
+    ];
+    file_put_contents($updateLogFile, json_encode($logEntry, JSON_PRETTY_PRINT) . "\n---\n", FILE_APPEND);
+    @chmod($updateLogFile, 0666);
+
+    logWebhookActivity('update_event_received', [
+        'event_type' => $eventType,
+        'alert_id' => $alertId,
+        'body_keys' => array_keys($body)
+    ]);
+
+    // --- Skip our own echoes ---
+    // When entity_id is our PSAP, this is our own callback being echoed back
+    $entityId = $body['entity_id'] ?? null;
+    if ($entityId === 'ID_Berkeley' && in_array($eventType, ['alert.status_update', 'alert.disposition_update'])) {
+        logWebhookActivity('own_echo_skipped', [
+            'event_type' => $eventType,
+            'alert_id' => $alertId,
+            'entity_id' => $entityId
+        ]);
+        return [
+            'success' => true,
+            'action' => 'own_echo_skipped',
+            'event_type' => $eventType,
+            'alert_id' => $alertId,
+            'message' => 'Skipped — this is our own callback echoed back'
+        ];
+    }
+
+    // --- Look up the CFS number for this alert ---
+    $cfsNumber = lookupCfsNumber($alertId);
+    if (!$cfsNumber) {
+        logWebhookActivity('cfs_lookup_failed', [
+            'alert_id' => $alertId,
+            'event_type' => $eventType
+        ]);
+        return [
+            'success' => false,
+            'action' => 'cfs_lookup_failed',
+            'event_type' => $eventType,
+            'alert_id' => $alertId,
+            'message' => 'No CFS found for this alert_id — cannot apply update'
+        ];
+    }
+
+    logWebhookActivity('cfs_found', [
+        'alert_id' => $alertId,
+        'cfs_number' => $cfsNumber
+    ]);
+
+    // --- Update dtUpdatedDateTime in the database ---
+    try {
+        if ($dbConn) {
+            $updateStmt = $dbConn->prepare(
+                "UPDATE IncomingAlertData SET dtUpdatedDateTime = GETUTCDATE() 
+                 WHERE sSourceId = :alert_id AND sCfsNumber IS NOT NULL AND sCadStatus = 'POSTED'"
+            );
+            $updateStmt->execute([':alert_id' => $alertId]);
+            logWebhookActivity('db_timestamp_updated', [
+                'alert_id' => $alertId,
+                'rows_affected' => $updateStmt->rowCount()
+            ]);
+        }
+    } catch (Exception $e) {
+        // DB update failure is non-fatal
+        error_log('Failed to update dtUpdatedDateTime: ' . $e->getMessage());
+    }
+
+    // --- Route to the appropriate SS endpoint ---
+    $cadResult = null;
+
+    switch ($eventType) {
+        case 'alert.location_update':
+            // PATCH /CFSLocation with new coordinates and civic address
+            $locationData = [
+                'latitude' => $body['geodetic']['latitude'] ?? null,
+                'longitude' => $body['geodetic']['longitude'] ?? null,
+                'altitude' => $body['geodetic']['altitude'] ?? null,
+                'street_1' => $body['civic']['street_1'] ?? null,
+                'street_2' => $body['civic']['street_2'] ?? null,
+                'city' => $body['civic']['city'] ?? null,
+                'state' => $body['civic']['state'] ?? null,
+            ];
+            $cadResult = $cadClient->updateLocation($cfsNumber, $locationData);
+
+            // Also add a note so dispatchers see the location changed
+            $lat = $body['geodetic']['latitude'] ?? '?';
+            $lon = $body['geodetic']['longitude'] ?? '?';
+            $addr = $body['civic']['street_1'] ?? 'unknown';
+            $city = $body['civic']['city'] ?? '';
+            $note = "LOCATION UPDATED: {$addr}, {$city} | GPS: {$lat}, {$lon}";
+            $cadClient->addNote($cfsNumber, $note);
+            break;
+
+        case 'alert.status_update':
+            // POST /CFSNote logging the external status change
+            $statusName = $body['status']['name'] ?? 'unknown';
+            $statusDisplay = $body['status']['display_name'] ?? $statusName;
+            $sender = $body['sender'] ?? 'System';
+            $entity = $body['entity_display_name'] ?? 'Unknown';
+            $note = "STATUS UPDATE ({$entity}): {$statusDisplay} [by {$sender}]";
+            $cadResult = $cadClient->addNote($cfsNumber, $note);
+            break;
+
+        case 'alert.disposition_update':
+            // POST /CFSNote logging the external disposition change
+            $dispName = $body['disposition']['name'] ?? 'unknown';
+            $dispDisplay = $body['disposition']['display_name'] ?? $dispName;
+            $entity = $body['entity_display_name'] ?? 'Unknown';
+            $note = "DISPOSITION UPDATE ({$entity}): {$dispDisplay}";
+            $cadResult = $cadClient->addNote($cfsNumber, $note);
+            break;
+
+        case 'alert.chat':
+            // POST /CFSNote with the chat message
+            $sender = $body['sender'] ?? 'Unknown';
+            $message = $body['message'] ?? '';
+            $entity = $body['entity_display_name'] ?? '';
+            $note = "CHAT ({$entity} - {$sender}): {$message}";
+            $cadResult = $cadClient->addNote($cfsNumber, $note);
+            break;
+
+        case 'alert.milestone':
+            // POST /CFSNote with the milestone
+            $message = $body['message'] ?? '';
+            $note = "MILESTONE: {$message}";
+            $cadResult = $cadClient->addNote($cfsNumber, $note);
+            break;
+
+        case 'alert.multi_trip_signal':
+            $message = $body['message'] ?? '';
+            $note = "MULTI-TRIP SIGNAL: {$message}";
+            $cadResult = $cadClient->addNote($cfsNumber, $note);
+            break;
+    }
+
+    logWebhookActivity('cad_update_result', [
+        'event_type' => $eventType,
+        'alert_id' => $alertId,
+        'cfs_number' => $cfsNumber,
+        'cad_result' => $cadResult
+    ]);
+
+    return [
+        'success' => $cadResult['success'] ?? false,
+        'action' => 'cad_updated',
+        'event_type' => $eventType,
+        'alert_id' => $alertId,
+        'cfs_number' => $cfsNumber,
+        'cad_result' => $cadResult
+    ];
+}
+
+/**
+ * Look up the CFS number for a given RapidSOS alert_id.
+ * Queries the database for the most recent POSTED record with this alert_id.
+ */
+function lookupCfsNumber($alertId)
+{
+    global $dbConn;
+
+    if (!$dbConn || !$alertId) {
+        return null;
+    }
+
+    try {
+        $stmt = $dbConn->prepare(
+            "SELECT TOP 1 sCfsNumber FROM IncomingAlertData 
+             WHERE sSourceId = :alert_id AND sCfsNumber IS NOT NULL AND sCadStatus = 'POSTED'
+             ORDER BY dtCreatedDateTime DESC"
+        );
+        $stmt->execute([':alert_id' => $alertId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? $row['sCfsNumber'] : null;
+    } catch (Exception $e) {
+        error_log('CFS lookup failed: ' . $e->getMessage());
+        return null;
+    }
+}
+
 function forwardAlertToWriteToDB($alertData, $eventType, $isStatusUpdate = false)
 {
     global $config;
-
-    // For status updates, only update the database - don't create new CAD entry
-    if ($isStatusUpdate) {
-        logWebhookActivity('status_update_received', [
-            'alert_id' => $alertData['alert_id'] ?? $alertData['body']['alert_id'] ?? 'unknown',
-            'status' => $alertData['body']['status'] ?? 'unknown'
-        ]);
-
-        // TODO: Update existing database record with new status
-        // For now, just log and skip CAD creation
-        return [
-            'success' => true,
-            'action' => 'status_update_logged',
-            'message' => 'Status update received but not yet implemented'
-        ];
-    }
 
     // Transform RapidSOS webhook alert data to match the format expected by writeToDB.php
     $transformedData = transformWebhookAlert($alertData, $eventType);
@@ -252,17 +482,41 @@ function mapEmergencyTypeToCallType($rapidSOSEmergencyType)
     // Map RapidSOS emergency types to exact Southern Software CAD call type codes
     // CRITICAL: These strings must EXACTLY match what's in the CAD dropdown
     $mapping = [
-        'FIRE' => '52 ALARMS - FIRE',           // Fire alarm
-        'MEDICAL' => '32 UNKNOWN PROBLEM',      // Medical emergency
-        'BURGLARY' => '104 ALARMS - LAW',       // Burglary alarm
-        'PANIC' => '104 ALARMS - LAW'           // Panic alarm (treat as law enforcement)
+        // Fire-related
+        'FIRE' => '52 ALARMS - FIRE',
+        'FIRE_ALARM' => '52 ALARMS - FIRE',
+        'CO' => '52 ALARMS - FIRE',              // Carbon monoxide → fire response
+        'CARBON_MONOXIDE' => '52 ALARMS - FIRE',
+        'SMOKE' => '52 ALARMS - FIRE',
+
+        // Medical
+        'MEDICAL' => '32 UNKNOWN PROBLEM',
+        'MEDICAL_ALERT' => '32 UNKNOWN PROBLEM',
+
+        // Law enforcement / alarms
+        'BURGLARY' => '104 ALARMS - LAW',
+        'PANIC' => '104 ALARMS - LAW',
+        'MOBILE_PANIC' => '104 ALARMS - LAW',
+        'HOLDUP' => '104 ALARMS - LAW',
+        'DURESS' => '104 ALARMS - LAW',
+        'ACTIVE_ASSAILANT' => '104 ALARMS - LAW',
+        'INTRUSION' => '104 ALARMS - LAW',
+        'PERIMETER' => '104 ALARMS - LAW',
+        'GLASS_BREAK' => '104 ALARMS - LAW',
+        'DOOR' => '104 ALARMS - LAW',
+
+        // General / other
+        'OTHER' => '32 UNKNOWN PROBLEM',
+        'UNKNOWN' => '32 UNKNOWN PROBLEM',
+        'TEST' => '32 UNKNOWN PROBLEM',
     ];
 
-    // Normalize input (uppercase, trim)
+    // Normalize input (uppercase, trim, underscores for spaces)
     $type = strtoupper(trim($rapidSOSEmergencyType));
+    $type = str_replace(' ', '_', $type);
 
     // Return mapped value or default
-    return $mapping[$type] ?? '32 UNKNOWN PROBLEM'; // Default to MEDICAL/UNKNOWN
+    return $mapping[$type] ?? '32 UNKNOWN PROBLEM';
 }
 
 function transformWebhookAlert($alertData, $eventType)

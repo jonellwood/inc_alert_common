@@ -243,6 +243,21 @@
                         </a>
                     </div>
                 </div>
+                <!-- Flock Webhook Management -->
+                <div class="bg-white p-6 rounded-lg shadow-md card-hover">
+                    <div class="text-center">
+                        <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-link text-2xl text-green-600"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Webhook Management</h3>
+                        <p class="text-gray-600 mb-4">Manage Flock ALPR webhook subscriptions and connection status</p>
+                        <a href="manage/flock_subscriptions.php"
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg inline-flex items-center transition-colors">
+                            <i class="fas fa-cogs mr-2"></i>
+                            Manage Webhooks
+                        </a>
+                    </div>
+                </div>
 
                 <!-- WebSocket Client -->
                 <div class="bg-white p-6 rounded-lg shadow-md card-hover">

@@ -1,0 +1,102 @@
+{
+    "alerts": [
+        {
+            "authorized_entity": {
+                "id": "cops_monitoring_sandbox",
+                "name": "cops_monitoring_sandbox",
+                "phone": "13333333333"
+            },
+            "covering_psap_first_viewed_time": null,
+            "source_id": "xyz789",
+            "created_time": 1773245004140,
+            "location_history": [
+                {
+                    "geodetic": {
+                        "latitude": 32.857368,
+                        "longitude": -79.918689,
+                        "uncertainty_radius": -1,
+                        "altitude": 1,
+                        "vertical_uncertainty": null,
+                        "estimated_floor_level": null,
+                        "elevation": null
+                    },
+                    "provided_location": "GEODETIC",
+                    "civic": {
+                        "name": null,
+                        "street_1": "187 Cartright Street",
+                        "street_2": null,
+                        "city": "Charleston",
+                        "state": "SC",
+                        "country": "US",
+                        "zip_code": "29492"
+                    },
+                    "created_at": 1773245004153
+                }
+            ],
+            "associated_role_type": "RESPONSIBLE",
+            "followers": [],
+            "alert_id": "alert-c9b73c50-e462-46d0-a977-7f7a3af4390e",
+            "incident_time": 1773245000899,
+            "last_updated_time": 1773245004364,
+            "notified_agencies": [],
+            "sla_expiration_time": 1773245034364,
+            "location": {
+                "geodetic": {
+                    "latitude": 32.857368,
+                    "longitude": -79.918689,
+                    "uncertainty_radius": -1,
+                    "altitude": 1,
+                    "vertical_uncertainty": null,
+                    "estimated_floor_level": null,
+                    "elevation": null
+                },
+                "civic": {
+                    "name": null,
+                    "street_1": "187 Cartright Street",
+                    "street_2": null,
+                    "city": "Charleston",
+                    "state": "SC",
+                    "country": "US",
+                    "zip_code": "29492"
+                },
+                "provided_location": "GEODETIC"
+            },
+            "description": "Grubhub Anxious Moment SMS Live Agent Chat",
+            "log_messages": [],
+            "status": {
+                "name": "DISPATCH_REQUESTED",
+                "display_name": "Dispatch Requested",
+                "entity_display_name": "partner_demos",
+                "sender": ""
+            },
+            "service_provider_name": "Grubhub Emergency Panic Alert",
+            "supplemental_only": false,
+            "is_media_enabled": false,
+            "site_type": {
+                "name": "PERSONAL",
+                "display_name": "Personal"
+            },
+            "subtype": null,
+            "dispatch_requested_time": 1773245004364,
+            "emergency_type": {
+                "name": "MOBILE_PANIC",
+                "display_name": "Mobile Panic"
+            },
+            "test_mode": {
+                "test_enabled": false,
+                "internal": false
+            },
+            "is_chat_enabled": false,
+            "covering_psap": {
+                "id": "ID_Berkeley",
+                "name": "Berkeley_Alerts",
+                "phone": "15555555555"
+            },
+            "webhook_event_type": "webhook",
+            "call_type_alias": "32 UNKNOWN PROBLEM",
+            "created_time_formatted": "2026-03-11 16:03:24",
+            "last_updated_time_formatted": "2026-03-11 16:03:24",
+            "incident_time_formatted": "2026-03-11 16:03:20"
+        }
+    ]
+}

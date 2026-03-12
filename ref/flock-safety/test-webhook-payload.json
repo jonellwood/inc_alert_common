@@ -1,0 +1,81 @@
+{
+	"source": "flocksafety",
+	"alerts": [
+		{
+			"alert_id": "flock-00000000-0000-0000-0000-000000000000",
+			"source_id": "00000000-0000-0000-0000-000000000000",
+			"reference_number": "00000000-0000-0000-0000-000000000000",
+			"source_system": "FlockSafety",
+			"service_provider_name": "Flock Safety",
+			"emergency_type": {
+				"name": "LPR_ALERT",
+				"display_name": "LPR Alert - On Custom Hotlist"
+			},
+			"call_type_alias": "FLOCK BOLO",
+			"location": {
+				"geodetic": {
+					"latitude": 0,
+					"longitude": 0,
+					"uncertainty_radius": null
+				},
+				"civic": {
+					"street_1": null,
+					"street_2": null,
+					"city": null,
+					"state": null,
+					"zip_code": null,
+					"country": "United States",
+					"name": "Test Device"
+				}
+			},
+			"contact": {
+				"full_name": "Flock Safety LPR",
+				"first_name": null,
+				"last_name": null,
+				"phone": null,
+				"email": null
+			},
+			"user": {
+				"full_name": "Flock Safety LPR",
+				"phone_number": null,
+				"email": null,
+				"first_name": null,
+				"last_name": null
+			},
+			"description": "BOLO: FLOCKTM (GEORGIA) - On Custom Hotlist - Case# 000000",
+			"comments": "Flock Safety LPR Alert\nPlate: FLOCKTM (GEORGIA)\nPlate Confidence: 99.9%\nReason: On Custom Hotlist\nHotlist: Test Source\nCase Number: 000000\nCamera: Test Device\nNetwork: Test Network\nDetails: https:\/\/hotlist.flocksafety.com\/\nImage: https:\/\/images.prismic.io\/flock-safety\/dbfffb07-5823-4e31-a6b6-ef5e322bf332_FlockSafety_FalconHW_SingleFamHOA.jpg",
+			"status": {
+				"name": "ACTIVE"
+			},
+			"created_time": 1773324383000,
+			"submitted_time": 1773324504000,
+			"last_updated_time": 1773324504000,
+			"incident_time": 1773324383000,
+			"vehicle": {
+				"plate_number": "FLOCKTM",
+				"plate_state": "GE",
+				"make": null,
+				"model": null,
+				"color": null
+			},
+			"additional_data": {
+				"device_external_id": "00000000-0000-0000-0000-000000000000",
+				"network_name": "Test Network",
+				"network_external_id": "00000000-0000-0000-0000-000000000000",
+				"image_url": "https:\/\/images.prismic.io\/flock-safety\/dbfffb07-5823-4e31-a6b6-ef5e322bf332_FlockSafety_FalconHW_SingleFamHOA.jpg",
+				"image_expiration": "2026-03-19T14:08:23Z",
+				"details_url": "https:\/\/hotlist.flocksafety.com\/",
+				"plate_confidence": 0.999,
+				"state_confidence": 0.999,
+				"sources": [
+					{
+						"name": "Test Source",
+						"reason": "On Custom Hotlist",
+						"caseNumber": "000000",
+						"customHotlistAudience": "restricted"
+					}
+				]
+			}
+		}
+	]
+}
