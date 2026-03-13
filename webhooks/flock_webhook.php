@@ -325,6 +325,76 @@ function transformFlockAlert($payload, $config)
     return $transformed;
 }
 
+/**
+ * Check if this alert should be sent to CAD based on admin settings.
+ * Returns ['allowed' => bool, 'reason' => string]
+ */
+function shouldSendToCad($payload, $transformedAlert)
+{
+    $settingsFile = __DIR__ . '/../config/flock_alert_settings.json';
+    if (!file_exists($settingsFile)) {
+        // No settings file = allow all (fail-open for safety)
+        return ['allowed' => true, 'reason' => 'no_settings_file'];
+    }
+
+    $settings = json_decode(file_get_contents($settingsFile), true);
+    if (!$settings) {
+        return ['allowed' => true, 'reason' => 'settings_parse_error'];
+    }
+
+    $global = $settings['global_settings'] ?? [];
+
+    // Global override: send everything
+    if (!empty($global['send_all_to_cad'])) {
+        return ['allowed' => true, 'reason' => 'global_send_all'];
+    }
+
+    // Check minimum plate confidence
+    $minConfidence = $global['min_plate_confidence'] ?? 0;
+    if ($minConfidence > 0) {
+        $plateConfidence = $transformedAlert['additional_data']['plate_confidence'] ?? null;
+        if ($plateConfidence !== null) {
+            $confidencePct = $plateConfidence * 100;
+            if ($confidencePct < $minConfidence) {
+                return ['allowed' => false, 'reason' => "plate_confidence_{$confidencePct}_below_{$minConfidence}"];
+            }
+        }
+    }
+
+    // Extract the alert reason from the primary source
+    $sources = $payload['sources'] ?? [];
+    $primarySource = $sources[0] ?? [];
+    $reason = $primarySource['reason'] ?? 'Unknown';
+
+    // Check if this reason matches a "Custom Hotlist" pattern
+    // Flock sends the hotlist name as the reason for custom hotlists
+    $alertTypes = $settings['alert_types'] ?? [];
+    $matchedType = null;
+
+    // Direct match first
+    if (isset($alertTypes[$reason])) {
+        $matchedType = $reason;
+    } else {
+        // Check if the description indicates a custom hotlist ("On Custom Hotlist" or similar)
+        $description = $transformedAlert['description'] ?? '';
+        if (stripos($description, 'Custom Hotlist') !== false || stripos($description, 'On ') === 0) {
+            $matchedType = 'Custom Hotlist';
+        }
+    }
+
+    if ($matchedType !== null && isset($alertTypes[$matchedType])) {
+        $typeConfig = $alertTypes[$matchedType];
+        if (!$typeConfig['send_to_cad']) {
+            return ['allowed' => false, 'reason' => "type_disabled:{$matchedType}"];
+        }
+        return ['allowed' => true, 'reason' => "type_enabled:{$matchedType}"];
+    }
+
+    // Unknown type: check default_new_type_enabled
+    $defaultEnabled = $global['default_new_type_enabled'] ?? false;
+    return ['allowed' => $defaultEnabled, 'reason' => "unknown_type:{$reason}"];
+}
+
 // Transform the Flock payload
 try {
     $transformedAlert = transformFlockAlert($payload, $flockConfig);
@@ -334,6 +404,37 @@ try {
         'call_type_alias' => $transformedAlert['call_type_alias'],
         'plate' => $transformedAlert['vehicle']['plate_number'] ?? 'unknown',
         'description' => $transformedAlert['description']
+    ]);
+
+    // Check alert settings filter
+    $filterResult = shouldSendToCad($payload, $transformedAlert);
+
+    if (!$filterResult['allowed']) {
+        $logFiltered = true;
+        $settingsJson = @file_get_contents(__DIR__ . '/../config/flock_alert_settings.json');
+        $settingsData = $settingsJson ? json_decode($settingsJson, true) : null;
+        if ($settingsData) {
+            $logFiltered = $settingsData['global_settings']['log_filtered_alerts'] ?? true;
+        }
+
+        if ($logFiltered) {
+            logWebhookActivity('alert_filtered', [
+                'alert_id' => $transformedAlert['alert_id'],
+                'plate' => $transformedAlert['vehicle']['plate_number'] ?? 'unknown',
+                'description' => $transformedAlert['description'],
+                'filter_reason' => $filterResult['reason']
+            ]);
+        }
+
+        sendResponse(200, 'Alert received but filtered', [
+            'filtered' => true,
+            'reason' => $filterResult['reason']
+        ]);
+    }
+
+    logWebhookActivity('alert_allowed', [
+        'alert_id' => $transformedAlert['alert_id'],
+        'filter_reason' => $filterResult['reason']
     ]);
 
     // Wrap in 'alerts' array to match writeToDB.php expectations

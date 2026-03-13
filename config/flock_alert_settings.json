@@ -1,0 +1,54 @@
+{
+	"alert_types": {
+		"Stolen Vehicle": {
+			"enabled": true,
+			"send_to_cad": true,
+			"description": "Vehicle reported stolen in NCIC/state databases",
+			"call_type_alias": "FLOCK BOLO"
+		},
+		"Stolen Plate": {
+			"enabled": true,
+			"send_to_cad": true,
+			"description": "License plate reported stolen",
+			"call_type_alias": "FLOCK BOLO"
+		},
+		"Warrants": {
+			"enabled": true,
+			"send_to_cad": true,
+			"description": "Vehicle associated with outstanding warrants",
+			"call_type_alias": "FLOCK BOLO"
+		},
+		"Protection Order": {
+			"enabled": false,
+			"send_to_cad": false,
+			"description": "Vehicle associated with a protection/restraining order",
+			"call_type_alias": "FLOCK BOLO"
+		},
+		"Sex Offender": {
+			"enabled": false,
+			"send_to_cad": false,
+			"description": "Vehicle registered to a sex offender",
+			"call_type_alias": "FLOCK BOLO"
+		},
+		"Gang or Suspected Terrorist": {
+			"enabled": true,
+			"send_to_cad": true,
+			"description": "Vehicle associated with gang activity or suspected terrorism",
+			"call_type_alias": "FLOCK BOLO"
+		},
+		"Custom Hotlist": {
+			"enabled": true,
+			"send_to_cad": true,
+			"description": "Vehicle on a custom/organization-specific hotlist",
+			"call_type_alias": "FLOCK BOLO"
+		}
+	},
+	"global_settings": {
+		"send_all_to_cad": false,
+		"log_filtered_alerts": true,
+		"min_plate_confidence": 0,
+		"default_new_type_enabled": false
+	},
+	"last_updated": null,
+	"updated_by": null
+}
